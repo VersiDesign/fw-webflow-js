@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.addEventListener('click', function (e) {
       var t = e.target;
-      var toggle = (t && t.closest) ? t.closest('.triangle-svg') : null;
+      var toggle = (t && t.closest) ? t.closest('.dropdown-trigger, .triangle-svg') : null;
 
       if (toggle) {
         var dropdown = toggle.closest ? toggle.closest('.dropdown') : null;
