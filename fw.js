@@ -1,4 +1,3 @@
-<script>
 document.addEventListener('DOMContentLoaded', function () {
   // --- CORE VARIABLES ------------------------------------------------------
   var overlay         = document.querySelector('.sheets-overlay');
@@ -1674,4 +1673,3 @@ document.addEventListener('DOMContentLoaded', function () {
   })();
 
 });
-</script>
