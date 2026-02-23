@@ -115,6 +115,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   })();
 
+  setupCustomDropdowns();
+
   // If neither overlay nor ageGate exists, nothing else to do
   if (!overlay && !ageGate) return;
 
@@ -250,14 +252,16 @@ document.addEventListener('DOMContentLoaded', function () {
   // ------------------------------------------------------------------------
   // Custom dropdown + persistent visual scrollbar
   // ------------------------------------------------------------------------
-  (function setupCustomDropdowns() {
-    var dropdowns = Array.from(document.querySelectorAll('.dropdown'));
-    if (!dropdowns.length) return;
-
+  function setupCustomDropdowns() {
     var scrollbarInstances = [];
+    var scrollbarByDropdown = new WeakMap();
+
+    function getDropdowns() {
+      return Array.from(document.querySelectorAll('.dropdown'));
+    }
 
     function closeAll(exceptEl) {
-      dropdowns.forEach(function (dd) {
+      getDropdowns().forEach(function (dd) {
         if (exceptEl && dd === exceptEl) return;
         dd.classList.remove('is-open');
         dd.setAttribute('aria-expanded', 'false');
@@ -297,16 +301,52 @@ document.addEventListener('DOMContentLoaded', function () {
       scrollbarInstances.forEach(updateScrollbar);
     }
 
-    dropdowns.forEach(function (dropdown) {
-      var toggle = dropdown.querySelector('.triangle-svg');
+    function wireDropdown(dropdown) {
+      if (!dropdown || dropdown.dataset.dropdownBound === '1') return;
+
       var panel = dropdown.querySelector('.dropdown-panel');
       var list = dropdown.querySelector('.dropdown-list__collection');
-
-      if (!toggle || !panel) return;
+      if (!panel) return;
 
       dropdown.setAttribute('aria-expanded', dropdown.classList.contains('is-open') ? 'true' : 'false');
+      dropdown.dataset.dropdownBound = '1';
 
-      toggle.addEventListener('click', function (e) {
+      panel.addEventListener('click', function (e) {
+        e.stopPropagation();
+      });
+
+      if (list && !scrollbarByDropdown.has(dropdown)) {
+        var rail = document.createElement('div');
+        rail.className = 'dropdown-scrollbar-rail';
+        rail.setAttribute('aria-hidden', 'true');
+
+        var thumb = document.createElement('div');
+        thumb.className = 'dropdown-scrollbar-thumb';
+        rail.appendChild(thumb);
+        panel.appendChild(rail);
+
+        var instance = { list: list, rail: rail, thumb: thumb };
+        scrollbarInstances.push(instance);
+        scrollbarByDropdown.set(dropdown, instance);
+
+        list.addEventListener('scroll', function () {
+          updateScrollbar(instance);
+        }, { passive: true });
+      }
+    }
+
+    getDropdowns().forEach(wireDropdown);
+
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      var toggle = (t && t.closest) ? t.closest('.triangle-svg') : null;
+
+      if (toggle) {
+        var dropdown = toggle.closest ? toggle.closest('.dropdown') : null;
+        if (!dropdown) return;
+
+        wireDropdown(dropdown);
+
         e.preventDefault();
         e.stopPropagation();
 
@@ -319,32 +359,9 @@ document.addEventListener('DOMContentLoaded', function () {
           setTimeout(refreshAllScrollbars, 0);
           setTimeout(refreshAllScrollbars, 120);
         }
-      });
-
-      panel.addEventListener('click', function (e) {
-        e.stopPropagation();
-      });
-
-      if (list) {
-        var rail = document.createElement('div');
-        rail.className = 'dropdown-scrollbar-rail';
-        rail.setAttribute('aria-hidden', 'true');
-
-        var thumb = document.createElement('div');
-        thumb.className = 'dropdown-scrollbar-thumb';
-        rail.appendChild(thumb);
-        panel.appendChild(rail);
-
-        var instance = { list: list, rail: rail, thumb: thumb };
-        scrollbarInstances.push(instance);
-
-        list.addEventListener('scroll', function () {
-          updateScrollbar(instance);
-        }, { passive: true });
+        return;
       }
-    });
 
-    document.addEventListener('click', function () {
       closeAll();
     });
 
@@ -362,8 +379,16 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
 
+    if ('MutationObserver' in window) {
+      var mo = new MutationObserver(function () {
+        getDropdowns().forEach(wireDropdown);
+        refreshAllScrollbars();
+      });
+      mo.observe(document.body, { childList: true, subtree: true });
+    }
+
     refreshAllScrollbars();
-  })();
+  }
 
   // ------------------------------------------------------------------------
   // Everything below is overlay/sheets code.
