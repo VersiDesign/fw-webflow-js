@@ -248,6 +248,124 @@ document.addEventListener('DOMContentLoaded', function () {
   })();
 
   // ------------------------------------------------------------------------
+  // Custom dropdown + persistent visual scrollbar
+  // ------------------------------------------------------------------------
+  (function setupCustomDropdowns() {
+    var dropdowns = Array.from(document.querySelectorAll('.dropdown'));
+    if (!dropdowns.length) return;
+
+    var scrollbarInstances = [];
+
+    function closeAll(exceptEl) {
+      dropdowns.forEach(function (dd) {
+        if (exceptEl && dd === exceptEl) return;
+        dd.classList.remove('is-open');
+        dd.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    function updateScrollbar(instance) {
+      if (!instance || !instance.list || !instance.rail || !instance.thumb) return;
+      var list = instance.list;
+      var rail = instance.rail;
+      var thumb = instance.thumb;
+
+      var clientH = list.clientHeight;
+      var scrollH = list.scrollHeight;
+      var maxScroll = Math.max(0, scrollH - clientH);
+
+      if (clientH <= 0) {
+        rail.style.opacity = '0';
+        return;
+      }
+
+      rail.style.opacity = '1';
+
+      var trackH = rail.clientHeight || clientH;
+      var minThumbH = 36;
+      var thumbH = (maxScroll <= 0)
+        ? trackH
+        : Math.max(minThumbH, Math.round(trackH * (clientH / scrollH)));
+      var maxTop = Math.max(0, trackH - thumbH);
+      var top = maxScroll ? Math.round((list.scrollTop / maxScroll) * maxTop) : 0;
+
+      thumb.style.height = thumbH + 'px';
+      thumb.style.transform = 'translateY(' + top + 'px)';
+    }
+
+    function refreshAllScrollbars() {
+      scrollbarInstances.forEach(updateScrollbar);
+    }
+
+    dropdowns.forEach(function (dropdown) {
+      var toggle = dropdown.querySelector('.triangle-svg');
+      var panel = dropdown.querySelector('.dropdown-panel');
+      var list = dropdown.querySelector('.dropdown-list__collection');
+
+      if (!toggle || !panel) return;
+
+      dropdown.setAttribute('aria-expanded', dropdown.classList.contains('is-open') ? 'true' : 'false');
+
+      toggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        var willOpen = !dropdown.classList.contains('is-open');
+        closeAll(dropdown);
+        dropdown.classList.toggle('is-open', willOpen);
+        dropdown.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+
+        if (willOpen) {
+          setTimeout(refreshAllScrollbars, 0);
+          setTimeout(refreshAllScrollbars, 120);
+        }
+      });
+
+      panel.addEventListener('click', function (e) {
+        e.stopPropagation();
+      });
+
+      if (list) {
+        var rail = document.createElement('div');
+        rail.className = 'dropdown-scrollbar-rail';
+        rail.setAttribute('aria-hidden', 'true');
+
+        var thumb = document.createElement('div');
+        thumb.className = 'dropdown-scrollbar-thumb';
+        rail.appendChild(thumb);
+        panel.appendChild(rail);
+
+        var instance = { list: list, rail: rail, thumb: thumb };
+        scrollbarInstances.push(instance);
+
+        list.addEventListener('scroll', function () {
+          updateScrollbar(instance);
+        }, { passive: true });
+      }
+    });
+
+    document.addEventListener('click', function () {
+      closeAll();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if ((e.key || '').toLowerCase() === 'escape') closeAll();
+    });
+
+    window.addEventListener('resize', refreshAllScrollbars);
+
+    if ('ResizeObserver' in window) {
+      var ro = new ResizeObserver(refreshAllScrollbars);
+      scrollbarInstances.forEach(function (instance) {
+        ro.observe(instance.list);
+        ro.observe(instance.rail);
+      });
+    }
+
+    refreshAllScrollbars();
+  })();
+
+  // ------------------------------------------------------------------------
   // Everything below is overlay/sheets code.
   // ------------------------------------------------------------------------
   if (!overlay) return;
@@ -1452,124 +1570,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (shouldRunCursorLoop()) startCursorLoopIfNeeded();
   }
-
-  // ========================================================================
-  // Custom dropdown + persistent visual scrollbar
-  // ========================================================================
-  (function setupCustomDropdowns() {
-    var dropdowns = Array.from(document.querySelectorAll('.dropdown'));
-    if (!dropdowns.length) return;
-
-    var scrollbarInstances = [];
-
-    function closeAll(exceptEl) {
-      dropdowns.forEach(function (dd) {
-        if (exceptEl && dd === exceptEl) return;
-        dd.classList.remove('is-open');
-        dd.setAttribute('aria-expanded', 'false');
-      });
-    }
-
-    function updateScrollbar(instance) {
-      if (!instance || !instance.list || !instance.rail || !instance.thumb) return;
-      var list = instance.list;
-      var rail = instance.rail;
-      var thumb = instance.thumb;
-
-      var clientH = list.clientHeight;
-      var scrollH = list.scrollHeight;
-      var maxScroll = Math.max(0, scrollH - clientH);
-
-      if (clientH <= 0) {
-        rail.style.opacity = '0';
-        return;
-      }
-
-      rail.style.opacity = '1';
-
-      var trackH = rail.clientHeight || clientH;
-      var minThumbH = 36;
-      var thumbH = (maxScroll <= 0)
-        ? trackH
-        : Math.max(minThumbH, Math.round(trackH * (clientH / scrollH)));
-      var maxTop = Math.max(0, trackH - thumbH);
-      var top = maxScroll ? Math.round((list.scrollTop / maxScroll) * maxTop) : 0;
-
-      thumb.style.height = thumbH + 'px';
-      thumb.style.transform = 'translateY(' + top + 'px)';
-    }
-
-    function refreshAllScrollbars() {
-      scrollbarInstances.forEach(updateScrollbar);
-    }
-
-    dropdowns.forEach(function (dropdown) {
-      var toggle = dropdown.querySelector('.triangle-svg');
-      var panel = dropdown.querySelector('.dropdown-panel');
-      var list = dropdown.querySelector('.dropdown-list__collection');
-
-      if (!toggle || !panel) return;
-
-      dropdown.setAttribute('aria-expanded', dropdown.classList.contains('is-open') ? 'true' : 'false');
-
-      toggle.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        var willOpen = !dropdown.classList.contains('is-open');
-        closeAll(dropdown);
-        dropdown.classList.toggle('is-open', willOpen);
-        dropdown.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-
-        if (willOpen) {
-          setTimeout(refreshAllScrollbars, 0);
-          setTimeout(refreshAllScrollbars, 120);
-        }
-      });
-
-      panel.addEventListener('click', function (e) {
-        e.stopPropagation();
-      });
-
-      if (list) {
-        var rail = document.createElement('div');
-        rail.className = 'dropdown-scrollbar-rail';
-        rail.setAttribute('aria-hidden', 'true');
-
-        var thumb = document.createElement('div');
-        thumb.className = 'dropdown-scrollbar-thumb';
-        rail.appendChild(thumb);
-        panel.appendChild(rail);
-
-        var instance = { list: list, rail: rail, thumb: thumb };
-        scrollbarInstances.push(instance);
-
-        list.addEventListener('scroll', function () {
-          updateScrollbar(instance);
-        }, { passive: true });
-      }
-    });
-
-    document.addEventListener('click', function () {
-      closeAll();
-    });
-
-    document.addEventListener('keydown', function (e) {
-      if ((e.key || '').toLowerCase() === 'escape') closeAll();
-    });
-
-    window.addEventListener('resize', refreshAllScrollbars);
-
-    if ('ResizeObserver' in window) {
-      var ro = new ResizeObserver(refreshAllScrollbars);
-      scrollbarInstances.forEach(function (instance) {
-        ro.observe(instance.list);
-        ro.observe(instance.rail);
-      });
-    }
-
-    refreshAllScrollbars();
-  })();
 
   // ========================================================================
   // About circle number count-up (unchanged)
