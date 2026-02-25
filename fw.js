@@ -264,6 +264,13 @@ document.addEventListener('DOMContentLoaded', function () {
     function closeAll(exceptEl) {
       getDropdowns().forEach(function (dd) {
         if (exceptEl && dd === exceptEl) return;
+
+        var inst = scrollbarByDropdown.get(dd);
+        if (inst && inst.list) {
+          try { inst.list.scrollTop = 0; } catch (e) {}
+          updateScrollbar(inst);
+        }
+
         dd.classList.remove('is-open');
         dd.setAttribute('aria-expanded', 'false');
       });
@@ -401,8 +408,19 @@ document.addEventListener('DOMContentLoaded', function () {
         dropdown.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
 
         if (willOpen) {
+          var openInst = scrollbarByDropdown.get(dropdown);
+          if (openInst && openInst.list) {
+            try { openInst.list.scrollTop = 0; } catch (e) {}
+            updateScrollbar(openInst);
+          }
           setTimeout(refreshAllScrollbars, 0);
           setTimeout(refreshAllScrollbars, 120);
+        } else {
+          var closedInst = scrollbarByDropdown.get(dropdown);
+          if (closedInst && closedInst.list) {
+            try { closedInst.list.scrollTop = 0; } catch (e) {}
+            updateScrollbar(closedInst);
+          }
         }
         return;
       }
