@@ -255,6 +255,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function setupCustomDropdowns() {
     var scrollbarInstances = [];
     var scrollbarByDropdown = new WeakMap();
+    var resizeObserver = null;
 
     function getDropdowns() {
       return Array.from(document.querySelectorAll('.dropdown'));
@@ -301,6 +302,44 @@ document.addEventListener('DOMContentLoaded', function () {
       scrollbarInstances.forEach(updateScrollbar);
     }
 
+    function teardownDropdownBindings() {
+      scrollbarInstances.forEach(function (instance) {
+        if (instance && instance.list && instance.onScroll) {
+          instance.list.removeEventListener('scroll', instance.onScroll);
+        }
+        if (resizeObserver && instance) {
+          try { if (instance.list) resizeObserver.unobserve(instance.list); } catch (e) {}
+          try { if (instance.rail) resizeObserver.unobserve(instance.rail); } catch (e) {}
+        }
+      });
+
+      scrollbarInstances = [];
+      scrollbarByDropdown = new WeakMap();
+
+      getDropdowns().forEach(function (dropdown) {
+        if (dropdown && dropdown.removeAttribute) {
+          dropdown.removeAttribute('data-dropdown-bound');
+        }
+
+        var panel = dropdown && dropdown.querySelector ? dropdown.querySelector('.dropdown-panel') : null;
+        if (!panel) return;
+
+        Array.from(panel.querySelectorAll('.dropdown-scrollbar-rail')).forEach(function (rail) {
+          if (rail && rail.parentNode) rail.parentNode.removeChild(rail);
+        });
+      });
+    }
+
+    function rebindDropdowns() {
+      teardownDropdownBindings();
+      getDropdowns().forEach(function (dropdown) {
+        dropdown.classList.remove('is-open');
+        dropdown.setAttribute('aria-expanded', 'false');
+        wireDropdown(dropdown);
+      });
+      refreshAllScrollbars();
+    }
+
     function wireDropdown(dropdown) {
       if (!dropdown || dropdown.dataset.dropdownBound === '1') return;
 
@@ -325,13 +364,19 @@ document.addEventListener('DOMContentLoaded', function () {
         rail.appendChild(thumb);
         panel.appendChild(rail);
 
-        var instance = { list: list, rail: rail, thumb: thumb };
+        var instance = { list: list, rail: rail, thumb: thumb, onScroll: null };
         scrollbarInstances.push(instance);
         scrollbarByDropdown.set(dropdown, instance);
 
-        list.addEventListener('scroll', function () {
+        instance.onScroll = function () {
           updateScrollbar(instance);
-        }, { passive: true });
+        };
+        list.addEventListener('scroll', instance.onScroll, { passive: true });
+
+        if (resizeObserver) {
+          try { resizeObserver.observe(list); } catch (e) {}
+          try { resizeObserver.observe(rail); } catch (e) {}
+        }
       }
     }
 
@@ -381,16 +426,16 @@ document.addEventListener('DOMContentLoaded', function () {
       } catch (err) {}
 
       var isBackForward = !!(e && e.persisted) || !!(navEntry && navEntry.type === 'back_forward');
-      if (isBackForward) closeAll();
+      if (isBackForward) rebindDropdowns();
     });
 
     window.addEventListener('resize', refreshAllScrollbars);
 
     if ('ResizeObserver' in window) {
-      var ro = new ResizeObserver(refreshAllScrollbars);
+      resizeObserver = new ResizeObserver(refreshAllScrollbars);
       scrollbarInstances.forEach(function (instance) {
-        ro.observe(instance.list);
-        ro.observe(instance.rail);
+        resizeObserver.observe(instance.list);
+        resizeObserver.observe(instance.rail);
       });
     }
 
