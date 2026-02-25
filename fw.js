@@ -126,6 +126,10 @@ document.addEventListener('DOMContentLoaded', function () {
     (document.body && document.body.className && document.body.className.indexOf('trade-portal') !== -1) ||
     (document.body && (document.body.classList.contains('trade-portal') || document.body.classList.contains('page-trade-portal')));
 
+  if (isTradePortalPage && document.body && document.body.classList) {
+    document.body.classList.add('is-trade-portal-page');
+  }
+
   // --- AGE GATE ------------------------------------------------------------
   (function setupAgeGate() {
     var gate = document.querySelector('.age-gate');
