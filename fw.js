@@ -369,6 +369,21 @@ document.addEventListener('DOMContentLoaded', function () {
       if ((e.key || '').toLowerCase() === 'escape') closeAll();
     });
 
+    // Prevent BFCache/history restore from leaving a dropdown visually open.
+    window.addEventListener('pagehide', function () {
+      closeAll();
+    });
+
+    window.addEventListener('pageshow', function (e) {
+      var navEntry = null;
+      try {
+        navEntry = performance.getEntriesByType('navigation')[0] || null;
+      } catch (err) {}
+
+      var isBackForward = !!(e && e.persisted) || !!(navEntry && navEntry.type === 'back_forward');
+      if (isBackForward) closeAll();
+    });
+
     window.addEventListener('resize', refreshAllScrollbars);
 
     if ('ResizeObserver' in window) {
