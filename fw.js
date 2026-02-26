@@ -550,6 +550,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var allSheets = Array.from(document.querySelectorAll('.sheet'));
   var sheets = allSheets;
   if (!sheets.length) return;
+  var strips = sheets.map(sheet => sheet.querySelector('.sheet-strip'));
 
   // Scroll containers – include .brandsheet + injected .corebrand-inner
   var scrollContainers = Array.from(document.querySelectorAll('.sheet-inner, .corebrand-inner'));
@@ -647,6 +648,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function updateMobileNavMode() {
     mobileNavMode = isMobileNavMode();
+    strips.forEach(strip => {
+      if (!strip) return;
+      strip.style.pointerEvents = mobileNavMode ? 'none' : 'auto';
+    });
   }
 
   function getClosedPositions(W) {
@@ -723,6 +728,7 @@ document.addEventListener('DOMContentLoaded', function () {
       sheets.forEach((sheet, idx) => {
         sheet.style.left = (closed[idx] !== undefined ? closed[idx] : (W + 'px')) + 'px';
         sheet.style.opacity = '1';
+        sheet.style.pointerEvents = 'auto';
       });
 
       if (isTradePortalPage) {
@@ -750,9 +756,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (idx === activeIndex) {
               sheet.style.left = '75px';
               sheet.style.opacity = '1';
+              sheet.style.pointerEvents = 'auto';
               setStripLabelOpacity(sheet, 0);
             } else {
               sheet.style.opacity = '0';
+              sheet.style.pointerEvents = 'none';
               setStripLabelOpacity(sheet, 1);
             }
           });
@@ -1258,6 +1266,12 @@ document.addEventListener('DOMContentLoaded', function () {
       setTimeout(function () {
         fadeBrandsToWhite(brandsSheet);
       }, 20);
+
+      // Optional: prevent double-click spam
+      try { strip.style.pointerEvents = 'none'; } catch (err) {}
+      setTimeout(function () {
+        try { strip.style.pointerEvents = ''; } catch (err) {}
+      }, DELAY_MS + 50);
 
       // 3) Navigate after delay using Webflow link href
       setTimeout(function () {
