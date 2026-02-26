@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var coreContent     = document.querySelector('.sheet-inner.content-core');
   var coreStripSlider = document.querySelector('.core-strip-slider');
   var linksWrap       = document.querySelector('.links__wrap');
+  var tradeLogoFW     = document.querySelector('.trade-logo-fw');
   var brandBackBtn    = document.querySelector('.corebrand-back');
   var faceWrap        = document.querySelector('.face__wrap');
 
@@ -712,6 +713,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (isOpen && typeof hideCursor === 'function') hideCursor();
   }
 
+  function setTradeLogoVisibility(isVisible) {
+    if (!isTradePortalPage || !tradeLogoFW) return;
+    tradeLogoFW.style.transition = 'opacity 0.25s ease';
+    tradeLogoFW.style.opacity = isVisible ? '1' : '0';
+  }
+
   function applyLayout() {
     var W = overlay.clientWidth;
     var closed = getClosedPositions(W);
@@ -804,6 +811,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     coreIsOpen = (activeIndex === 0);
+    setTradeLogoVisibility(activeIndex !== null);
 
     applyBrandSheetLayout();
 
