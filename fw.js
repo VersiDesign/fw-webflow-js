@@ -1277,11 +1277,13 @@ document.addEventListener('DOMContentLoaded', function () {
       activeIndex = getSheetIndexByName(targetName);
       applyLayout();
 
-      // 2) Fade to white shortly after layout so the transition actually animates
-      var targetSheet = getSheetByName(targetName);
-      setTimeout(function () {
-        fadeSheetToWhite(targetSheet);
-      }, 20);
+      // 2) Fade to white shortly after layout (except regions)
+      if (targetName !== 'regions') {
+        var targetSheet = getSheetByName(targetName);
+        setTimeout(function () {
+          fadeSheetToWhite(targetSheet);
+        }, 20);
+      }
 
       // Optional: prevent double-click spam
       try { strip.style.pointerEvents = 'none'; } catch (err) {}
