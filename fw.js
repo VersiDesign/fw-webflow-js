@@ -1198,38 +1198,38 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // =======================================================================
-  // ✅ TRADE PORTAL (desktop): brands strip click -> slide open + fade to white
-  // then navigate using the Webflow link href after a delay.
+  // ✅ TRADE PORTAL (desktop): brands/products/regions strip click
+  // -> slide open + fade to white, then navigate after a short delay.
   //
   // IMPORTANT: uses CAPTURE so it runs BEFORE the generic .sheet click handler.
   // Also avoids requestAnimationFrame (your earlier crash prevented execution).
   // =======================================================================
-  (function setupTradePortalBrandsStripSlideFadeDelayLink() {
+  (function setupTradePortalStripSlideFadeDelayLink() {
     if (!isTradePortalPage) return;
     if (!sheets || sheets.length !== 3) return;
 
     var DELAY_MS = 650; // tune 550–800ms
     var WHITE = '#fff';
+    var TP_SHEET_NAMES = ['brands', 'products', 'regions'];
 
     function isDesktopMode() {
       return !isMobileNavMode();
     }
 
-    function getBrandsIndex() {
+    function getSheetIndexByName(name) {
       var idx = sheets.findIndex(function (s) {
-        return s && s.classList && s.classList.contains('brands');
+        return s && s.classList && s.classList.contains(name);
       });
       return (idx < 0) ? 0 : idx;
     }
 
-    function getBrandsSheet() {
-      var idx = getBrandsIndex();
+    function getSheetByName(name) {
+      var idx = getSheetIndexByName(name);
       return sheets[idx] || null;
     }
 
-    function fadeBrandsToWhite(sheetEl) {
+    function fadeSheetToWhite(sheetEl) {
       if (!sheetEl) return;
-      // You confirmed: .sheet.brands is yellow.
       sheetEl.style.setProperty('background-color', WHITE, 'important');
       sheetEl.style.setProperty('background', WHITE, 'important');
     }
@@ -1245,9 +1245,17 @@ document.addEventListener('DOMContentLoaded', function () {
       var t = e.target;
       if (!t || !t.closest) return;
 
-      // Only intercept clicks from the brands strip area
-      var strip = t.closest('.sheet-strip.brands');
+      // Only intercept clicks from brands/products/regions strip areas
+      var strip = t.closest('.sheet-strip');
       if (!strip) return;
+      var targetName = null;
+      for (var i = 0; i < TP_SHEET_NAMES.length; i++) {
+        if (strip.classList && strip.classList.contains(TP_SHEET_NAMES[i])) {
+          targetName = TP_SHEET_NAMES[i];
+          break;
+        }
+      }
+      if (!targetName) return;
 
       // Find the real link Webflow will navigate to
       var link = t.closest('a[href]') || strip.querySelector('a[href]');
@@ -1264,15 +1272,15 @@ document.addEventListener('DOMContentLoaded', function () {
       e.stopPropagation();
       if (e.stopImmediatePropagation) e.stopImmediatePropagation();
 
-      // 1) Slide open brands sheet (your existing system)
+      // 1) Slide open target sheet (existing system)
       try { closeBrandPanel({ push: true }); } catch (err) {}
-      activeIndex = getBrandsIndex();
+      activeIndex = getSheetIndexByName(targetName);
       applyLayout();
 
       // 2) Fade to white shortly after layout so the transition actually animates
-      var brandsSheet = getBrandsSheet();
+      var targetSheet = getSheetByName(targetName);
       setTimeout(function () {
-        fadeBrandsToWhite(brandsSheet);
+        fadeSheetToWhite(targetSheet);
       }, 20);
 
       // Optional: prevent double-click spam
