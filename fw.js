@@ -67,6 +67,23 @@ document.addEventListener('DOMContentLoaded', function () {
     window.closeMobileNavIfOpen = function () {
       if (toggle._isOpen) closeNav();
     };
+
+    // Ensure trade-portal never returns from history with an open mobile nav.
+    window.addEventListener('pageshow', function (e) {
+      var p = (window.location && window.location.pathname) ? window.location.pathname : '';
+      var isTradePortal = p.indexOf('trade-portal') !== -1;
+      if (!isTradePortal) return;
+
+      var navEntry = null;
+      try {
+        navEntry = performance.getEntriesByType('navigation')[0] || null;
+      } catch (err) {}
+
+      var isBackForward = !!(e && e.persisted) || !!(navEntry && navEntry.type === 'back_forward');
+      if (!isBackForward) return;
+
+      closeNav();
+    });
   })();
 
   // =======================================================================
