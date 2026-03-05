@@ -595,13 +595,6 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!sheets.length) return;
   var strips = sheets.map(sheet => sheet.querySelector('.sheet-strip'));
 
-  // Force slide-only transitions for sheets (overrides external CSS that may still include opacity).
-  sheets.forEach(function (sheet) {
-    if (!sheet) return;
-    sheet.style.transition = 'left 0.4s ease';
-    sheet.style.willChange = 'left';
-  });
-
   // Scroll containers – include .brandsheet + injected .corebrand-inner
   var scrollContainers = Array.from(document.querySelectorAll('.sheet-inner, .corebrand-inner'));
   if (brandSheet) scrollContainers.push(brandSheet);
@@ -658,8 +651,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     sheets.forEach(function (s) {
-      s.style.transition = 'left 0.4s ease';
-      s.style.willChange = 'left';
+      s.style.transition = 'left 0.4s ease, opacity 0.25s ease, background-color 0.25s ease';
+      s.style.willChange = 'left, opacity, background-color';
 
       var lbl = s.querySelector('.sheet-strip-label');
       if (lbl) {
@@ -783,7 +776,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (activeIndex === null) {
       sheets.forEach((sheet, idx) => {
         sheet.style.left = (closed[idx] !== undefined ? closed[idx] : (W + 'px')) + 'px';
-        sheet.style.visibility = 'visible';
+        sheet.style.opacity = '1';
         sheet.style.pointerEvents = 'auto';
       });
 
@@ -805,18 +798,17 @@ document.addEventListener('DOMContentLoaded', function () {
       if (mobileNavMode) {
         sheets.forEach((sheet, idx) => {
           sheet.style.left = (idx === activeIndex) ? '0px' : (W + 'px');
-          sheet.style.visibility = 'visible';
         });
       } else {
         if (isTradePortalPage) {
           sheets.forEach((sheet, idx) => {
             if (idx === activeIndex) {
               sheet.style.left = '75px';
-              sheet.style.visibility = 'visible';
+              sheet.style.opacity = '1';
               sheet.style.pointerEvents = 'auto';
               setStripLabelOpacity(sheet, 0);
             } else {
-              sheet.style.visibility = 'hidden';
+              sheet.style.opacity = '0';
               sheet.style.pointerEvents = 'none';
               setStripLabelOpacity(sheet, 1);
             }
