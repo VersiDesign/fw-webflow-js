@@ -70,6 +70,22 @@ document.addEventListener('DOMContentLoaded', function () {
   })();
 
   // =======================================================================
+  // NAV LINKS: always close mobile nav when primary nav links are clicked
+  // =======================================================================
+  (function setupPrimaryNavLinkClose() {
+    document.addEventListener('click', function (e) {
+      var navLink = e.target && e.target.closest
+        ? e.target.closest('.nav__link-wrap.home, .nav__link-wrap.core, .nav__link-wrap.sustainability, .nav__link-wrap.about')
+        : null;
+      if (!navLink) return;
+
+      if (typeof window.closeMobileNavIfOpen === 'function') {
+        window.closeMobileNavIfOpen();
+      }
+    });
+  })();
+
+  // =======================================================================
   // TRADE PORTAL REGISTER (Webflow IX proxy click) ✅ MUST RUN ON ALL PAGES
   // =======================================================================
   (function setupRegisterIXProxy() {
@@ -1416,6 +1432,22 @@ document.addEventListener('DOMContentLoaded', function () {
   var navLinkCore  = document.querySelector('.nav__link-wrap.core');
   var navLinkSust  = document.querySelector('.nav__link-wrap.sustainability');
   var navLinkAbout = document.querySelector('.nav__link-wrap.about');
+  var navLinkHome  = document.querySelector('.nav__link-wrap.home');
+
+  function closeOpenOverlaySheets() {
+    var hadOpenSheet = (activeIndex !== null);
+    var hadOpenBrand = !!brandPanelOpen;
+    if (!hadOpenSheet && !hadOpenBrand) return;
+
+    activeIndex = null;
+
+    if (hadOpenBrand) {
+      closeBrandPanel({ push: false });
+    } else {
+      applyLayout();
+      resetLayerScrollDelayed();
+    }
+  }
 
   function openSheetFromNav(index) {
     closeBrandPanel({ push: true });
@@ -1455,6 +1487,18 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!isMobileNavMode()) return;
       e.preventDefault();
       openSheetFromNav(2);
+    });
+  }
+
+  if (navLinkHome) {
+    navLinkHome.addEventListener('click', function (e) {
+      var p = window.location.pathname || '';
+      var isHomePage = (p === '/' || p === '');
+
+      if (isHomePage) {
+        e.preventDefault();
+        closeOpenOverlaySheets();
+      }
     });
   }
 
@@ -1500,6 +1544,16 @@ document.addEventListener('DOMContentLoaded', function () {
     isHandlingPop = true;
 
     try {
+      if (typeof window.closeMobileNavIfOpen === 'function') {
+        window.closeMobileNavIfOpen();
+      }
+
+      if (activeIndex !== null || brandPanelOpen) {
+        closeOpenOverlaySheets();
+        isHandlingPop = false;
+        return;
+      }
+
       var state = e.state || null;
       var path = window.location.pathname + window.location.search + window.location.hash;
 
