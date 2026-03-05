@@ -1355,6 +1355,7 @@ document.addEventListener('DOMContentLoaded', function () {
       activeIndex = idx;
       applyLayout();
       resetLayerScrollDelayed();
+      pushOverlaySheetState(idx);
     });
   });
 
@@ -1449,6 +1450,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function pushOverlaySheetState(index) {
+    if (isHandlingPop) return;
+    if (typeof index !== 'number' || index < 0) return;
+
+    try {
+      var state = history.state || null;
+      if (state && state.overlaySheet === true && state.overlaySheetIndex === index && state.brandPanel === false) {
+        return;
+      }
+
+      history.pushState(
+        { brandPanel: false, overlaySheet: true, overlaySheetIndex: index },
+        '',
+        window.location.href
+      );
+    } catch (e) {}
+  }
+
   function openSheetFromNav(index) {
     closeBrandPanel({ push: true });
 
@@ -1460,6 +1479,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     applyLayout();
     resetLayerScrollDelayed();
+    pushOverlaySheetState(index);
 
     if (typeof window.closeMobileNavIfOpen === 'function') {
       window.closeMobileNavIfOpen();
