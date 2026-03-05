@@ -116,6 +116,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
   })();
 
+  // =======================================================================
+  // TRADE BACK BUTTON: always navigate to previous page
+  // =======================================================================
+  (function setupTradeBackButton() {
+    document.addEventListener('click', function (e) {
+      var backBtn = e.target && e.target.closest ? e.target.closest('.trade-back-btn') : null;
+      if (!backBtn) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+
+      var fallbackHref = backBtn.getAttribute('href');
+      if (fallbackHref && fallbackHref !== '#' && !/^javascript:/i.test(fallbackHref)) {
+        window.location.href = fallbackHref;
+        return;
+      }
+
+      window.location.href = '/';
+    }, { passive: false });
+  })();
+
   setupCustomDropdowns();
 
   // If neither overlay nor ageGate exists, nothing else to do
