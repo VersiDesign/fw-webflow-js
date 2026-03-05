@@ -658,8 +658,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     sheets.forEach(function (s) {
-      s.style.transition = 'left 0.4s ease, background-color 0.25s ease';
-      s.style.willChange = 'left, background-color';
+      s.style.transition = 'left 0.4s ease';
+      s.style.willChange = 'left';
 
       var lbl = s.querySelector('.sheet-strip-label');
       if (lbl) {
