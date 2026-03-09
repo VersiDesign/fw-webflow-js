@@ -1952,9 +1952,25 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   };
 
+  const closeDropdownForInput = (input) => {
+    const withinDropdown = input?.closest?.('.dropdown');
+
+    if (withinDropdown) {
+      withinDropdown.classList.remove('is-open');
+      withinDropdown.setAttribute('aria-expanded', 'false');
+      return;
+    }
+
+    document.querySelectorAll('.dropdown.is-open').forEach((dropdown) => {
+      dropdown.classList.remove('is-open');
+      dropdown.setAttribute('aria-expanded', 'false');
+    });
+  };
+
   document.addEventListener('change', (event) => {
     if (event.target?.matches?.('input[type="radio"]') && isBrandRadio(event.target)) {
       updateBrandToggle();
+      closeDropdownForInput(event.target);
     }
   });
 
