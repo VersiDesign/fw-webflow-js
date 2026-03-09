@@ -1912,30 +1912,53 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 (() => {
-  const TOGGLE_TEXT_SELECTOR = '.brand-toggle-text';
+  const TOGGLE_TEXT_SELECTOR = '.dropdown-placeholder.filter-placeholder';
   const RADIO_SELECTOR = 'input[type="radio"][fs-list-field="brand"]';
   const DEFAULT_LABEL = 'Brand';
 
+  const getBrandRadios = () => {
+    const strict = Array.from(document.querySelectorAll(RADIO_SELECTOR));
+    if (strict.length) return strict;
+
+    return Array.from(document.querySelectorAll('input[type="radio"]')).filter((input) => {
+      const field = (input.getAttribute('fs-list-field') || '').toLowerCase();
+      const name = (input.name || '').toLowerCase();
+      return field === 'brand' || name === 'brand' || name.includes('brand');
+    });
+  };
+
+  const isBrandRadio = (input) => getBrandRadios().includes(input);
+
   const getLabelText = (input) => {
-    const field = input.closest('.w-radio');
-    const label = field?.querySelector('.radio-label');
-    return label?.textContent?.trim() || input.getAttribute('fs-list-value') || DEFAULT_LABEL;
+    const field = input.closest('.w-radio, label');
+    const nestedLabel = field?.querySelector('.radio-label, .brand-filter-label, .w-form-label');
+    const siblingLabel = input.nextElementSibling;
+    const siblingText = siblingLabel?.textContent?.trim();
+    return (
+      nestedLabel?.textContent?.trim() ||
+      siblingText ||
+      input.getAttribute('fs-list-value') ||
+      input.value ||
+      DEFAULT_LABEL
+    );
   };
 
   const updateBrandToggle = () => {
-    const toggleText = document.querySelector(TOGGLE_TEXT_SELECTOR);
-    if (!toggleText) return;
+    const checked = getBrandRadios().find((input) => input.checked);
+    const nextText = checked ? getLabelText(checked) : DEFAULT_LABEL;
 
-    const checked = document.querySelector(`${RADIO_SELECTOR}:checked`);
-    toggleText.textContent = checked ? getLabelText(checked) : DEFAULT_LABEL;
+    document.querySelectorAll(TOGGLE_TEXT_SELECTOR).forEach((toggleText) => {
+      toggleText.textContent = nextText;
+    });
   };
 
   document.addEventListener('change', (event) => {
-    if (event.target.matches(RADIO_SELECTOR)) {
+    if (event.target?.matches?.('input[type="radio"]') && isBrandRadio(event.target)) {
       updateBrandToggle();
     }
   });
 
   document.addEventListener('DOMContentLoaded', updateBrandToggle);
+  window.addEventListener('load', updateBrandToggle);
   window.addEventListener('pageshow', updateBrandToggle);
 })();
