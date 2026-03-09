@@ -1918,7 +1918,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const getLabelText = (input) => {
     const field = input.closest('.w-radio');
-    const label = field?.querySelector('.brand-filter-label');
+    const label = field?.querySelector('.radio-label');
     return label?.textContent?.trim() || input.getAttribute('fs-list-value') || DEFAULT_LABEL;
   };
 
