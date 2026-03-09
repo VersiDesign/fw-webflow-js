@@ -1910,3 +1910,32 @@ document.addEventListener('DOMContentLoaded', function () {
   })();
 
 });
+
+(() => {
+  const TOGGLE_TEXT_SELECTOR = '.brand-toggle-text';
+  const RADIO_SELECTOR = 'input[type="radio"][fs-list-field="brand"]';
+  const DEFAULT_LABEL = 'Brand';
+
+  const getLabelText = (input) => {
+    const field = input.closest('.w-radio');
+    const label = field?.querySelector('.brand-filter-label');
+    return label?.textContent?.trim() || input.getAttribute('fs-list-value') || DEFAULT_LABEL;
+  };
+
+  const updateBrandToggle = () => {
+    const toggleText = document.querySelector(TOGGLE_TEXT_SELECTOR);
+    if (!toggleText) return;
+
+    const checked = document.querySelector(`${RADIO_SELECTOR}:checked`);
+    toggleText.textContent = checked ? getLabelText(checked) : DEFAULT_LABEL;
+  };
+
+  document.addEventListener('change', (event) => {
+    if (event.target.matches(RADIO_SELECTOR)) {
+      updateBrandToggle();
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', updateBrandToggle);
+  window.addEventListener('pageshow', updateBrandToggle);
+})();
