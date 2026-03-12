@@ -1913,21 +1913,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
 (() => {
   const TOGGLE_TEXT_SELECTOR = '.dropdown-placeholder.filter-placeholder';
-  const RADIO_SELECTOR = 'input[type="radio"][fs-list-field="brand"]';
-  const DEFAULT_LABEL = 'Brand';
 
-  const getBrandRadios = () => {
-    const strict = Array.from(document.querySelectorAll(RADIO_SELECTOR));
-    if (strict.length) return strict;
+  const getFilterDropdowns = () =>
+    Array.from(document.querySelectorAll('.dropdown')).filter((dropdown) =>
+      dropdown.querySelector(TOGGLE_TEXT_SELECTOR) &&
+      dropdown.querySelector('input[type="radio"]')
+    );
 
-    return Array.from(document.querySelectorAll('input[type="radio"]')).filter((input) => {
-      const field = (input.getAttribute('fs-list-field') || '').toLowerCase();
-      const name = (input.name || '').toLowerCase();
-      return field === 'brand' || name === 'brand' || name.includes('brand');
-    });
+  const getDropdownPlaceholder = (dropdown) => dropdown?.querySelector(TOGGLE_TEXT_SELECTOR);
+
+  const getDefaultLabel = (dropdown) => {
+    const toggleText = getDropdownPlaceholder(dropdown);
+    const savedLabel = toggleText?.dataset?.defaultLabel?.trim();
+
+    if (savedLabel) return savedLabel;
+
+    const initialLabel = toggleText?.textContent?.trim();
+    if (toggleText && initialLabel) {
+      toggleText.dataset.defaultLabel = initialLabel;
+    }
+
+    return initialLabel || 'Select';
   };
-
-  const isBrandRadio = (input) => getBrandRadios().includes(input);
 
   const getLabelText = (input) => {
     const field = input.closest('.w-radio, label');
@@ -1939,17 +1946,16 @@ document.addEventListener('DOMContentLoaded', function () {
       siblingText ||
       input.getAttribute('fs-list-value') ||
       input.value ||
-      DEFAULT_LABEL
+      'Select'
     );
   };
 
-  const updateBrandToggle = () => {
-    const checked = getBrandRadios().find((input) => input.checked);
-    const nextText = checked ? getLabelText(checked) : DEFAULT_LABEL;
+  const updateDropdownToggle = (dropdown) => {
+    const toggleText = getDropdownPlaceholder(dropdown);
+    if (!toggleText) return;
 
-    document.querySelectorAll(TOGGLE_TEXT_SELECTOR).forEach((toggleText) => {
-      toggleText.textContent = nextText;
-    });
+    const checked = Array.from(dropdown.querySelectorAll('input[type="radio"]')).find((input) => input.checked);
+    toggleText.textContent = checked ? getLabelText(checked) : getDefaultLabel(dropdown);
   };
 
   const closeDropdownForInput = (input) => {
@@ -1968,13 +1974,21 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   document.addEventListener('change', (event) => {
-    if (event.target?.matches?.('input[type="radio"]') && isBrandRadio(event.target)) {
-      updateBrandToggle();
+    const input = event.target;
+    if (input?.matches?.('input[type="radio"]')) {
+      const dropdown = input.closest('.dropdown');
+      if (!dropdown || !getDropdownPlaceholder(dropdown)) return;
+
+      updateDropdownToggle(dropdown);
       closeDropdownForInput(event.target);
     }
   });
 
-  document.addEventListener('DOMContentLoaded', updateBrandToggle);
-  window.addEventListener('load', updateBrandToggle);
-  window.addEventListener('pageshow', updateBrandToggle);
+  const updateAllDropdownToggles = () => {
+    getFilterDropdowns().forEach(updateDropdownToggle);
+  };
+
+  document.addEventListener('DOMContentLoaded', updateAllDropdownToggles);
+  window.addEventListener('load', updateAllDropdownToggles);
+  window.addEventListener('pageshow', updateAllDropdownToggles);
 })();
