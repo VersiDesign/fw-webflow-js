@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var ageGate         = document.querySelector('.age-gate');
 
   // =======================================================================
-  // PERF: rAF-throttled layout updater (prevents resize spam)
+  // PERF: rAF-throttled layout updater (prevents resize spam )
   // =======================================================================
   var _layoutRaf = null;
   function requestLayoutUpdate() {
