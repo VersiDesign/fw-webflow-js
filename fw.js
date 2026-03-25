@@ -1911,109 +1911,131 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-(() => {
-  const TOGGLE_TEXT_SELECTOR = '.dropdown-placeholder.filter-placeholder';
-  const RESET_LINK_CLASS = 'filter-reset-link';
-  const CHECKBOX_FILTER_SELECTOR = [
-    'input.product-sustainable',
-    'input.product-organic',
-    'input.product-natural',
-    'input.product-preservative-free',
-    'input.product-on-premise'
-  ].join(', ');
+(function () {
+  var TOGGLE_TEXT_SELECTOR = '.dropdown-placeholder.filter-placeholder';
+  var RESET_LINK_CLASS = 'filter-reset-link';
 
-  const getFilterDropdowns = () =>
-    Array.from(document.querySelectorAll('.dropdown')).filter((dropdown) =>
-      dropdown.querySelector(TOGGLE_TEXT_SELECTOR) &&
-      dropdown.querySelector('input[type="radio"]')
-    );
+  function toArray(list) {
+    return Array.prototype.slice.call(list || []);
+  }
 
-  const getDropdownPlaceholder = (dropdown) => dropdown?.querySelector(TOGGLE_TEXT_SELECTOR);
+  function matchesSelector(el, selector) {
+    if (!el || !selector) return false;
+    var matcher = el.matches || el.msMatchesSelector || el.webkitMatchesSelector;
+    return !!(matcher && matcher.call(el, selector));
+  }
 
-  const getCheckedFilterInputs = () => {
-    const checkedInputs = getFilterDropdowns().reduce((checkedItems, dropdown) => {
-      Array.from(dropdown.querySelectorAll('input[type="radio"]')).forEach((input) => {
-        if (input.checked) checkedItems.push(input);
+  function getFilterDropdowns() {
+    return toArray(document.querySelectorAll('.dropdown')).filter(function (dropdown) {
+      return dropdown.querySelector(TOGGLE_TEXT_SELECTOR) && dropdown.querySelector('input[type="radio"]');
+    });
+  }
+
+  function getDropdownPlaceholder(dropdown) {
+    return dropdown && dropdown.querySelector ? dropdown.querySelector(TOGGLE_TEXT_SELECTOR) : null;
+  }
+
+  function getCheckboxFilterInputs() {
+    return toArray(document.querySelectorAll('input[type="checkbox"]')).filter(function (input) {
+      return !input.closest('.dropdown');
+    });
+  }
+
+  function getCheckedFilterInputs() {
+    var checkedInputs = [];
+
+    getFilterDropdowns().forEach(function (dropdown) {
+      toArray(dropdown.querySelectorAll('input[type="radio"]')).forEach(function (input) {
+        if (input.checked) checkedInputs.push(input);
       });
-      return checkedItems;
-    }, []);
+    });
 
-    document.querySelectorAll(CHECKBOX_FILTER_SELECTOR).forEach((input) => {
+    getCheckboxFilterInputs().forEach(function (input) {
       if (input.checked) checkedInputs.push(input);
     });
 
     return checkedInputs;
-  };
+  }
 
-  const getDefaultLabel = (dropdown) => {
-    const toggleText = getDropdownPlaceholder(dropdown);
-    const savedLabel = toggleText?.dataset?.defaultLabel?.trim();
+  function getDefaultLabel(dropdown) {
+    var toggleText = getDropdownPlaceholder(dropdown);
+    var savedLabel = toggleText && toggleText.dataset ? (toggleText.dataset.defaultLabel || '').trim() : '';
 
     if (savedLabel) return savedLabel;
 
-    const initialLabel = toggleText?.textContent?.trim();
-    if (toggleText && initialLabel) {
+    var initialLabel = toggleText && toggleText.textContent ? toggleText.textContent.trim() : '';
+    if (toggleText && initialLabel && toggleText.dataset) {
       toggleText.dataset.defaultLabel = initialLabel;
     }
 
     return initialLabel || 'Select';
-  };
+  }
 
-  const getLabelText = (input) => {
-    const field = input.closest('.w-radio, label');
-    const nestedLabel = field?.querySelector('.radio-label, .brand-filter-label, .w-form-label');
-    const siblingLabel = input.nextElementSibling;
-    const siblingText = siblingLabel?.textContent?.trim();
+  function getLabelText(input) {
+    var field = input.closest ? input.closest('.w-radio, label') : null;
+    var nestedLabel = field && field.querySelector ? field.querySelector('.radio-label, .brand-filter-label, .w-form-label') : null;
+    var siblingLabel = input.nextElementSibling;
+    var siblingText = siblingLabel && siblingLabel.textContent ? siblingLabel.textContent.trim() : '';
     return (
-      nestedLabel?.textContent?.trim() ||
+      (nestedLabel && nestedLabel.textContent ? nestedLabel.textContent.trim() : '') ||
       siblingText ||
       input.getAttribute('fs-list-value') ||
       input.value ||
       'Select'
     );
-  };
+  }
 
-  const updateDropdownToggle = (dropdown) => {
-    const toggleText = getDropdownPlaceholder(dropdown);
+  function updateDropdownToggle(dropdown) {
+    var toggleText = getDropdownPlaceholder(dropdown);
     if (!toggleText) return;
 
-    const checked = Array.from(dropdown.querySelectorAll('input[type="radio"]')).find((input) => input.checked);
-    dropdown.classList.toggle('has-selection', Boolean(checked));
-    toggleText.textContent = checked ? getLabelText(checked) : getDefaultLabel(dropdown);
-  };
+    var checked = null;
 
-  const updateResetLinkVisibility = () => {
-    document.querySelectorAll(`.${RESET_LINK_CLASS}`).forEach((link) => {
-      link.hidden = getCheckedFilterInputs().length === 0;
+    toArray(dropdown.querySelectorAll('input[type="radio"]')).some(function (input) {
+      if (!input.checked) return false;
+      checked = input;
+      return true;
     });
-  };
 
-  const ensureResetLink = () => {
-    const dropdowns = getFilterDropdowns();
+    dropdown.classList.toggle('has-selection', !!checked);
+    toggleText.textContent = checked ? getLabelText(checked) : getDefaultLabel(dropdown);
+  }
+
+  function updateResetLinkVisibility() {
+    var isHidden = getCheckedFilterInputs().length === 0;
+    toArray(document.querySelectorAll('.' + RESET_LINK_CLASS)).forEach(function (link) {
+      link.hidden = isHidden;
+    });
+  }
+
+  function ensureResetLink() {
+    var dropdowns = getFilterDropdowns();
     if (!dropdowns.length) return;
-    if (document.querySelector(`.${RESET_LINK_CLASS}`)) return;
+    if (document.querySelector('.' + RESET_LINK_CLASS)) return;
 
-    const resetLink = document.createElement('button');
+    var resetLink = document.createElement('button');
     resetLink.type = 'button';
     resetLink.className = RESET_LINK_CLASS;
     resetLink.textContent = 'Reset filters';
     resetLink.hidden = getCheckedFilterInputs().length === 0;
-    resetLink.addEventListener('click', (event) => {
+    resetLink.addEventListener('click', function (event) {
       event.preventDefault();
       event.stopPropagation();
-      getCheckedFilterInputs().forEach((input) => {
+
+      getCheckedFilterInputs().forEach(function (input) {
         input.checked = false;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
+        dispatchChange(input);
       });
+
       updateAllDropdownToggles();
       updateResetLinkVisibility();
     });
 
     dropdowns[dropdowns.length - 1].insertAdjacentElement('afterend', resetLink);
-  };
+  }
 
-  const closeDropdownForInput = (input) => {
-    const withinDropdown = input?.closest?.('.dropdown');
+  function closeDropdownForInput(input) {
+    var withinDropdown = input && input.closest ? input.closest('.dropdown') : null;
 
     if (withinDropdown) {
       withinDropdown.classList.remove('is-open');
@@ -2021,38 +2043,52 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    document.querySelectorAll('.dropdown.is-open').forEach((dropdown) => {
+    toArray(document.querySelectorAll('.dropdown.is-open')).forEach(function (dropdown) {
       dropdown.classList.remove('is-open');
       dropdown.setAttribute('aria-expanded', 'false');
     });
-  };
+  }
 
-  document.addEventListener('change', (event) => {
-    const input = event.target;
-    if (input?.matches?.('input[type="radio"]')) {
-      const dropdown = input.closest('.dropdown');
+  function updateAllDropdownToggles() {
+    getFilterDropdowns().forEach(updateDropdownToggle);
+    updateResetLinkVisibility();
+  }
+
+  function initializeFilterControls() {
+    ensureResetLink();
+    updateAllDropdownToggles();
+  }
+
+  function dispatchChange(input) {
+    if (!input) return;
+
+    if (typeof Event === 'function') {
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
+
+    var legacyEvent = document.createEvent('Event');
+    legacyEvent.initEvent('change', true, true);
+    input.dispatchEvent(legacyEvent);
+  }
+
+  document.addEventListener('change', function (event) {
+    var input = event.target;
+
+    if (matchesSelector(input, 'input[type="radio"]')) {
+      var dropdown = input.closest ? input.closest('.dropdown') : null;
       if (!dropdown || !getDropdownPlaceholder(dropdown)) return;
 
       updateDropdownToggle(dropdown);
-      closeDropdownForInput(event.target);
+      closeDropdownForInput(input);
       updateResetLinkVisibility();
       return;
     }
 
-    if (input?.matches?.(CHECKBOX_FILTER_SELECTOR)) {
+    if (matchesSelector(input, 'input[type="checkbox"]')) {
       updateResetLinkVisibility();
     }
   });
-
-  const updateAllDropdownToggles = () => {
-    getFilterDropdowns().forEach(updateDropdownToggle);
-    updateResetLinkVisibility();
-  };
-
-  const initializeFilterControls = () => {
-    ensureResetLink();
-    updateAllDropdownToggles();
-  };
 
   document.addEventListener('DOMContentLoaded', initializeFilterControls);
   window.addEventListener('load', initializeFilterControls);
