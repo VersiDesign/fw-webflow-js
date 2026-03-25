@@ -1913,6 +1913,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 (() => {
   const TOGGLE_TEXT_SELECTOR = '.dropdown-placeholder.filter-placeholder';
+  const RESET_LINK_CLASS = 'filter-reset-link';
 
   const getFilterDropdowns = () =>
     Array.from(document.querySelectorAll('.dropdown')).filter((dropdown) =>
@@ -1921,6 +1922,30 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
   const getDropdownPlaceholder = (dropdown) => dropdown?.querySelector(TOGGLE_TEXT_SELECTOR);
+
+  const getCheckedFilterInputs = () =>
+    getFilterDropdowns().flatMap((dropdown) =>
+      Array.from(dropdown.querySelectorAll('input[type="radio"]')).filter((input) => input.checked)
+    );
+
+  const getFilterControlsContainer = (dropdowns) => {
+    if (!dropdowns.length) return null;
+
+    const firstParent = dropdowns[0].parentElement;
+    if (firstParent && dropdowns.every((dropdown) => dropdown.parentElement === firstParent)) {
+      return firstParent;
+    }
+
+    const firstGrandparent = firstParent?.parentElement;
+    if (
+      firstGrandparent &&
+      dropdowns.every((dropdown) => firstGrandparent.contains(dropdown))
+    ) {
+      return firstGrandparent;
+    }
+
+    return firstParent || dropdowns[0];
+  };
 
   const getDefaultLabel = (dropdown) => {
     const toggleText = getDropdownPlaceholder(dropdown);
@@ -1959,6 +1984,36 @@ document.addEventListener('DOMContentLoaded', function () {
     toggleText.textContent = checked ? getLabelText(checked) : getDefaultLabel(dropdown);
   };
 
+  const updateResetLinkVisibility = () => {
+    document.querySelectorAll(`.${RESET_LINK_CLASS}`).forEach((link) => {
+      link.hidden = getCheckedFilterInputs().length === 0;
+    });
+  };
+
+  const ensureResetLink = () => {
+    const dropdowns = getFilterDropdowns();
+    if (!dropdowns.length) return;
+
+    const container = getFilterControlsContainer(dropdowns);
+    if (!container || container.querySelector(`.${RESET_LINK_CLASS}`)) return;
+
+    const resetLink = document.createElement('button');
+    resetLink.type = 'button';
+    resetLink.className = RESET_LINK_CLASS;
+    resetLink.textContent = 'Reset filters';
+    resetLink.hidden = getCheckedFilterInputs().length === 0;
+    resetLink.addEventListener('click', () => {
+      getCheckedFilterInputs().forEach((input) => {
+        input.checked = false;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      updateAllDropdownToggles();
+      updateResetLinkVisibility();
+    });
+
+    container.appendChild(resetLink);
+  };
+
   const closeDropdownForInput = (input) => {
     const withinDropdown = input?.closest?.('.dropdown');
 
@@ -1982,14 +2037,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
       updateDropdownToggle(dropdown);
       closeDropdownForInput(event.target);
+      updateResetLinkVisibility();
     }
   });
 
   const updateAllDropdownToggles = () => {
     getFilterDropdowns().forEach(updateDropdownToggle);
+    updateResetLinkVisibility();
   };
 
-  document.addEventListener('DOMContentLoaded', updateAllDropdownToggles);
-  window.addEventListener('load', updateAllDropdownToggles);
-  window.addEventListener('pageshow', updateAllDropdownToggles);
+  const initializeFilterControls = () => {
+    ensureResetLink();
+    updateAllDropdownToggles();
+  };
+
+  document.addEventListener('DOMContentLoaded', initializeFilterControls);
+  window.addEventListener('load', initializeFilterControls);
+  window.addEventListener('pageshow', initializeFilterControls);
 })();
