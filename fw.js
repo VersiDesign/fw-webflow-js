@@ -1993,3 +1993,40 @@ document.addEventListener('DOMContentLoaded', function () {
   window.addEventListener('load', updateAllDropdownToggles);
   window.addEventListener('pageshow', updateAllDropdownToggles);
 })();
+
+(() => {
+  const form = document.querySelector('form[fs-list-element="filters"]');
+  const resetLink = document.querySelector('.filters-reset-link');
+
+  if (!form || !resetLink) return;
+
+  const hasActiveFilters = () => {
+    const fields = form.querySelectorAll('input, select, textarea');
+
+    return Array.from(fields).some((field) => {
+      if (field.type === 'checkbox' || field.type === 'radio') {
+        return field.checked;
+      }
+
+      if (field.tagName === 'SELECT') {
+        return field.value && field.value.trim() !== '';
+      }
+
+      return field.value && field.value.trim() !== '';
+    });
+  };
+
+  const updateResetVisibility = () => {
+    resetLink.classList.toggle('is-visible', hasActiveFilters());
+  };
+
+  form.addEventListener('change', updateResetVisibility);
+  form.addEventListener('input', updateResetVisibility);
+
+  resetLink.addEventListener('click', () => {
+    setTimeout(updateResetVisibility, 0);
+  });
+
+  window.addEventListener('pageshow', updateResetVisibility);
+  document.addEventListener('DOMContentLoaded', updateResetVisibility);
+})();
