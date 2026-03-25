@@ -1955,6 +1955,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!toggleText) return;
 
     const checked = Array.from(dropdown.querySelectorAll('input[type="radio"]')).find((input) => input.checked);
+    dropdown.classList.toggle('has-selection', Boolean(checked));
     toggleText.textContent = checked ? getLabelText(checked) : getDefaultLabel(dropdown);
   };
 
