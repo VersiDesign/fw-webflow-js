@@ -1911,131 +1911,56 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-(function () {
-  var TOGGLE_TEXT_SELECTOR = '.dropdown-placeholder.filter-placeholder';
-  var RESET_LINK_CLASS = 'filter-reset-link';
+(() => {
+  const TOGGLE_TEXT_SELECTOR = '.dropdown-placeholder.filter-placeholder';
 
-  function toArray(list) {
-    return Array.prototype.slice.call(list || []);
-  }
+  const getFilterDropdowns = () =>
+    Array.from(document.querySelectorAll('.dropdown')).filter((dropdown) =>
+      dropdown.querySelector(TOGGLE_TEXT_SELECTOR) &&
+      dropdown.querySelector('input[type="radio"]')
+    );
 
-  function matchesSelector(el, selector) {
-    if (!el || !selector) return false;
-    var matcher = el.matches || el.msMatchesSelector || el.webkitMatchesSelector;
-    return !!(matcher && matcher.call(el, selector));
-  }
+  const getDropdownPlaceholder = (dropdown) => dropdown?.querySelector(TOGGLE_TEXT_SELECTOR);
 
-  function getFilterDropdowns() {
-    return toArray(document.querySelectorAll('.dropdown')).filter(function (dropdown) {
-      return dropdown.querySelector(TOGGLE_TEXT_SELECTOR) && dropdown.querySelector('input[type="radio"]');
-    });
-  }
-
-  function getDropdownPlaceholder(dropdown) {
-    return dropdown && dropdown.querySelector ? dropdown.querySelector(TOGGLE_TEXT_SELECTOR) : null;
-  }
-
-  function getCheckboxFilterInputs() {
-    return toArray(document.querySelectorAll('input[type="checkbox"]')).filter(function (input) {
-      return !input.closest('.dropdown');
-    });
-  }
-
-  function getCheckedFilterInputs() {
-    var checkedInputs = [];
-
-    getFilterDropdowns().forEach(function (dropdown) {
-      toArray(dropdown.querySelectorAll('input[type="radio"]')).forEach(function (input) {
-        if (input.checked) checkedInputs.push(input);
-      });
-    });
-
-    getCheckboxFilterInputs().forEach(function (input) {
-      if (input.checked) checkedInputs.push(input);
-    });
-
-    return checkedInputs;
-  }
-
-  function getDefaultLabel(dropdown) {
-    var toggleText = getDropdownPlaceholder(dropdown);
-    var savedLabel = toggleText && toggleText.dataset ? (toggleText.dataset.defaultLabel || '').trim() : '';
+  const getDefaultLabel = (dropdown) => {
+    const toggleText = getDropdownPlaceholder(dropdown);
+    const savedLabel = toggleText?.dataset?.defaultLabel?.trim();
 
     if (savedLabel) return savedLabel;
 
-    var initialLabel = toggleText && toggleText.textContent ? toggleText.textContent.trim() : '';
-    if (toggleText && initialLabel && toggleText.dataset) {
+    const initialLabel = toggleText?.textContent?.trim();
+    if (toggleText && initialLabel) {
       toggleText.dataset.defaultLabel = initialLabel;
     }
 
     return initialLabel || 'Select';
-  }
+  };
 
-  function getLabelText(input) {
-    var field = input.closest ? input.closest('.w-radio, label') : null;
-    var nestedLabel = field && field.querySelector ? field.querySelector('.radio-label, .brand-filter-label, .w-form-label') : null;
-    var siblingLabel = input.nextElementSibling;
-    var siblingText = siblingLabel && siblingLabel.textContent ? siblingLabel.textContent.trim() : '';
+  const getLabelText = (input) => {
+    const field = input.closest('.w-radio, label');
+    const nestedLabel = field?.querySelector('.radio-label, .brand-filter-label, .w-form-label');
+    const siblingLabel = input.nextElementSibling;
+    const siblingText = siblingLabel?.textContent?.trim();
     return (
-      (nestedLabel && nestedLabel.textContent ? nestedLabel.textContent.trim() : '') ||
+      nestedLabel?.textContent?.trim() ||
       siblingText ||
       input.getAttribute('fs-list-value') ||
       input.value ||
       'Select'
     );
-  }
+  };
 
-  function updateDropdownToggle(dropdown) {
-    var toggleText = getDropdownPlaceholder(dropdown);
+  const updateDropdownToggle = (dropdown) => {
+    const toggleText = getDropdownPlaceholder(dropdown);
     if (!toggleText) return;
 
-    var checked = null;
-
-    toArray(dropdown.querySelectorAll('input[type="radio"]')).some(function (input) {
-      if (!input.checked) return false;
-      checked = input;
-      return true;
-    });
-
-    dropdown.classList.toggle('has-selection', !!checked);
+    const checked = Array.from(dropdown.querySelectorAll('input[type="radio"]')).find((input) => input.checked);
+    dropdown.classList.toggle('has-selection', Boolean(checked));
     toggleText.textContent = checked ? getLabelText(checked) : getDefaultLabel(dropdown);
-  }
+  };
 
-  function updateResetLinkVisibility() {
-    var isHidden = getCheckedFilterInputs().length === 0;
-    toArray(document.querySelectorAll('.' + RESET_LINK_CLASS)).forEach(function (link) {
-      link.hidden = isHidden;
-    });
-  }
-
-  function ensureResetLink() {
-    var dropdowns = getFilterDropdowns();
-    if (!dropdowns.length) return;
-    if (document.querySelector('.' + RESET_LINK_CLASS)) return;
-
-    var resetLink = document.createElement('button');
-    resetLink.type = 'button';
-    resetLink.className = RESET_LINK_CLASS;
-    resetLink.textContent = 'Reset filters';
-    resetLink.hidden = getCheckedFilterInputs().length === 0;
-    resetLink.addEventListener('click', function (event) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      getCheckedFilterInputs().forEach(function (input) {
-        input.checked = false;
-        dispatchChange(input);
-      });
-
-      updateAllDropdownToggles();
-      updateResetLinkVisibility();
-    });
-
-    dropdowns[dropdowns.length - 1].insertAdjacentElement('afterend', resetLink);
-  }
-
-  function closeDropdownForInput(input) {
-    var withinDropdown = input && input.closest ? input.closest('.dropdown') : null;
+  const closeDropdownForInput = (input) => {
+    const withinDropdown = input?.closest?.('.dropdown');
 
     if (withinDropdown) {
       withinDropdown.classList.remove('is-open');
@@ -2043,54 +1968,28 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    toArray(document.querySelectorAll('.dropdown.is-open')).forEach(function (dropdown) {
+    document.querySelectorAll('.dropdown.is-open').forEach((dropdown) => {
       dropdown.classList.remove('is-open');
       dropdown.setAttribute('aria-expanded', 'false');
     });
-  }
+  };
 
-  function updateAllDropdownToggles() {
-    getFilterDropdowns().forEach(updateDropdownToggle);
-    updateResetLinkVisibility();
-  }
-
-  function initializeFilterControls() {
-    ensureResetLink();
-    updateAllDropdownToggles();
-  }
-
-  function dispatchChange(input) {
-    if (!input) return;
-
-    if (typeof Event === 'function') {
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      return;
-    }
-
-    var legacyEvent = document.createEvent('Event');
-    legacyEvent.initEvent('change', true, true);
-    input.dispatchEvent(legacyEvent);
-  }
-
-  document.addEventListener('change', function (event) {
-    var input = event.target;
-
-    if (matchesSelector(input, 'input[type="radio"]')) {
-      var dropdown = input.closest ? input.closest('.dropdown') : null;
+  document.addEventListener('change', (event) => {
+    const input = event.target;
+    if (input?.matches?.('input[type="radio"]')) {
+      const dropdown = input.closest('.dropdown');
       if (!dropdown || !getDropdownPlaceholder(dropdown)) return;
 
       updateDropdownToggle(dropdown);
-      closeDropdownForInput(input);
-      updateResetLinkVisibility();
-      return;
-    }
-
-    if (matchesSelector(input, 'input[type="checkbox"]')) {
-      updateResetLinkVisibility();
+      closeDropdownForInput(event.target);
     }
   });
 
-  document.addEventListener('DOMContentLoaded', initializeFilterControls);
-  window.addEventListener('load', initializeFilterControls);
-  window.addEventListener('pageshow', initializeFilterControls);
+  const updateAllDropdownToggles = () => {
+    getFilterDropdowns().forEach(updateDropdownToggle);
+  };
+
+  document.addEventListener('DOMContentLoaded', updateAllDropdownToggles);
+  window.addEventListener('load', updateAllDropdownToggles);
+  window.addEventListener('pageshow', updateAllDropdownToggles);
 })();
