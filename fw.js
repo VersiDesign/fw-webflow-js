@@ -1914,6 +1914,13 @@ document.addEventListener('DOMContentLoaded', function () {
 (() => {
   const TOGGLE_TEXT_SELECTOR = '.dropdown-placeholder.filter-placeholder';
   const RESET_LINK_CLASS = 'filter-reset-link';
+  const CHECKBOX_FILTER_SELECTOR = [
+    'input.product-sustainable',
+    'input.product-organic',
+    'input.product-natural',
+    'input.product-preservative-free',
+    'input.product-on-premise'
+  ].join(', ');
 
   const getFilterDropdowns = () =>
     Array.from(document.querySelectorAll('.dropdown')).filter((dropdown) =>
@@ -1923,13 +1930,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const getDropdownPlaceholder = (dropdown) => dropdown?.querySelector(TOGGLE_TEXT_SELECTOR);
 
-  const getCheckedFilterInputs = () =>
-    getFilterDropdowns().reduce((checkedInputs, dropdown) => {
+  const getCheckedFilterInputs = () => {
+    const checkedInputs = getFilterDropdowns().reduce((checkedItems, dropdown) => {
       Array.from(dropdown.querySelectorAll('input[type="radio"]')).forEach((input) => {
-        if (input.checked) checkedInputs.push(input);
+        if (input.checked) checkedItems.push(input);
       });
-      return checkedInputs;
+      return checkedItems;
     }, []);
+
+    document.querySelectorAll(CHECKBOX_FILTER_SELECTOR).forEach((input) => {
+      if (input.checked) checkedInputs.push(input);
+    });
+
+    return checkedInputs;
+  };
 
   const getDefaultLabel = (dropdown) => {
     const toggleText = getDropdownPlaceholder(dropdown);
@@ -2021,6 +2035,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
       updateDropdownToggle(dropdown);
       closeDropdownForInput(event.target);
+      updateResetLinkVisibility();
+      return;
+    }
+
+    if (input?.matches?.(CHECKBOX_FILTER_SELECTOR)) {
       updateResetLinkVisibility();
     }
   });
