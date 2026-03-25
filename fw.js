@@ -1924,28 +1924,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const getDropdownPlaceholder = (dropdown) => dropdown?.querySelector(TOGGLE_TEXT_SELECTOR);
 
   const getCheckedFilterInputs = () =>
-    getFilterDropdowns().flatMap((dropdown) =>
-      Array.from(dropdown.querySelectorAll('input[type="radio"]')).filter((input) => input.checked)
-    );
-
-  const getFilterControlsContainer = (dropdowns) => {
-    if (!dropdowns.length) return null;
-
-    const firstParent = dropdowns[0].parentElement;
-    if (firstParent && dropdowns.every((dropdown) => dropdown.parentElement === firstParent)) {
-      return firstParent;
-    }
-
-    const firstGrandparent = firstParent?.parentElement;
-    if (
-      firstGrandparent &&
-      dropdowns.every((dropdown) => firstGrandparent.contains(dropdown))
-    ) {
-      return firstGrandparent;
-    }
-
-    return firstParent || dropdowns[0];
-  };
+    getFilterDropdowns().reduce((checkedInputs, dropdown) => {
+      Array.from(dropdown.querySelectorAll('input[type="radio"]')).forEach((input) => {
+        if (input.checked) checkedInputs.push(input);
+      });
+      return checkedInputs;
+    }, []);
 
   const getDefaultLabel = (dropdown) => {
     const toggleText = getDropdownPlaceholder(dropdown);
@@ -1993,16 +1977,16 @@ document.addEventListener('DOMContentLoaded', function () {
   const ensureResetLink = () => {
     const dropdowns = getFilterDropdowns();
     if (!dropdowns.length) return;
-
-    const container = getFilterControlsContainer(dropdowns);
-    if (!container || container.querySelector(`.${RESET_LINK_CLASS}`)) return;
+    if (document.querySelector(`.${RESET_LINK_CLASS}`)) return;
 
     const resetLink = document.createElement('button');
     resetLink.type = 'button';
     resetLink.className = RESET_LINK_CLASS;
     resetLink.textContent = 'Reset filters';
     resetLink.hidden = getCheckedFilterInputs().length === 0;
-    resetLink.addEventListener('click', () => {
+    resetLink.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
       getCheckedFilterInputs().forEach((input) => {
         input.checked = false;
         input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -2011,7 +1995,7 @@ document.addEventListener('DOMContentLoaded', function () {
       updateResetLinkVisibility();
     });
 
-    container.appendChild(resetLink);
+    dropdowns[dropdowns.length - 1].insertAdjacentElement('afterend', resetLink);
   };
 
   const closeDropdownForInput = (input) => {
