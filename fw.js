@@ -2026,8 +2026,25 @@ document.addEventListener('DOMContentLoaded', function () {
     return value.trim();
   };
 
+  const getFilterOptionValue = (field) =>
+    (
+      field.getAttribute('fs-list-value') ||
+      field.value ||
+      field.getAttribute('value') ||
+      ''
+    ).trim().toLowerCase();
+
+  const isActiveChoice = (field) => {
+    const value = getFilterOptionValue(field);
+    return value !== '' && value !== 'all' && value !== 'any';
+  };
+
   const hasActiveFilters = (form) =>
     Array.from(form.querySelectorAll(FILTER_FIELD_SELECTOR)).some((field) => {
+      if (field.type === 'checkbox' || field.type === 'radio') {
+        return field.checked && !field.defaultChecked && isActiveChoice(field);
+      }
+
       const current = getFieldState(field, false);
       const initial = getFieldState(field, true);
       return current !== null && current !== initial;
