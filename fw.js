@@ -1995,38 +1995,86 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 
 (() => {
-  const form = document.querySelector('form[fs-list-element="filters"]');
-  const resetLink = document.querySelector('.filters-reset-link');
+  const FILTER_FIELD_SELECTOR = 'input, select, textarea';
 
-  if (!form || !resetLink) return;
+  const getSelectState = (select, useDefault = false) => {
+    const options = Array.from(select.options);
+    const selected = options.filter((option) => (useDefault ? option.defaultSelected : option.selected));
+    return selected.map((option) => option.value.trim()).join('||');
+  };
 
-  const hasActiveFilters = () => {
-    const fields = form.querySelectorAll('input, select, textarea');
+  const getFieldState = (field, useDefault = false) => {
+    if (
+      field.disabled ||
+      field.type === 'hidden' ||
+      field.type === 'submit' ||
+      field.type === 'button' ||
+      field.type === 'reset'
+    ) {
+      return null;
+    }
 
-    return Array.from(fields).some((field) => {
-      if (field.type === 'checkbox' || field.type === 'radio') {
-        return field.checked;
-      }
+    if (field.type === 'checkbox' || field.type === 'radio') {
+      return useDefault ? field.defaultChecked : field.checked;
+    }
 
-      if (field.tagName === 'SELECT') {
-        return field.value && field.value.trim() !== '';
-      }
+    if (field.tagName === 'SELECT') {
+      return getSelectState(field, useDefault);
+    }
 
-      return field.value && field.value.trim() !== '';
+    const value = useDefault ? field.defaultValue : field.value;
+    return value.trim();
+  };
+
+  const hasActiveFilters = (form) =>
+    Array.from(form.querySelectorAll(FILTER_FIELD_SELECTOR)).some((field) => {
+      const current = getFieldState(field, false);
+      const initial = getFieldState(field, true);
+      return current !== null && current !== initial;
     });
+
+  const setupResetLink = () => {
+    const form = document.querySelector('form[fs-list-element="filters"]');
+    const resetLink = document.querySelector('.filters-reset-link');
+
+    if (!form || !resetLink || resetLink.dataset.resetLinkBound === 'true') return;
+
+    resetLink.dataset.resetLinkBound = 'true';
+
+    const updateResetVisibility = () => {
+      resetLink.classList.toggle('is-visible', hasActiveFilters(form));
+    };
+
+    const scheduleVisibilityUpdate = () => {
+      window.requestAnimationFrame(updateResetVisibility);
+    };
+
+    form.addEventListener('change', scheduleVisibilityUpdate);
+    form.addEventListener('input', scheduleVisibilityUpdate);
+    form.addEventListener('reset', () => {
+      window.setTimeout(updateResetVisibility, 0);
+    });
+
+    resetLink.addEventListener('click', () => {
+      window.setTimeout(updateResetVisibility, 0);
+    });
+
+    new MutationObserver(scheduleVisibilityUpdate).observe(form, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['checked', 'selected', 'value']
+    });
+
+    window.addEventListener('load', updateResetVisibility);
+    window.addEventListener('pageshow', updateResetVisibility);
+    updateResetVisibility();
   };
 
-  const updateResetVisibility = () => {
-    resetLink.classList.toggle('is-visible', hasActiveFilters());
-  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupResetLink);
+    return;
+  }
 
-  form.addEventListener('change', updateResetVisibility);
-  form.addEventListener('input', updateResetVisibility);
-
-  resetLink.addEventListener('click', () => {
-    setTimeout(updateResetVisibility, 0);
-  });
-
-  window.addEventListener('pageshow', updateResetVisibility);
-  document.addEventListener('DOMContentLoaded', updateResetVisibility);
+  setupResetLink();
 })();
