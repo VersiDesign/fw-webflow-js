@@ -2026,11 +2026,24 @@ document.addEventListener('DOMContentLoaded', function () {
     return value.trim();
   };
 
+  const getFieldLabelText = (field) => {
+    const wrapper = field.closest('.w-radio, .w-checkbox, label');
+    const nestedLabel = wrapper?.querySelector('.radio-label, .brand-filter-label, .w-form-label');
+    const siblingLabel = field.nextElementSibling;
+    return (
+      nestedLabel?.textContent ||
+      siblingLabel?.textContent ||
+      wrapper?.textContent ||
+      ''
+    ).trim();
+  };
+
   const getFilterOptionValue = (field) =>
     (
       field.getAttribute('fs-list-value') ||
       field.value ||
       field.getAttribute('value') ||
+      getFieldLabelText(field) ||
       ''
     ).trim().toLowerCase();
 
