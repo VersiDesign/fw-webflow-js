@@ -2034,6 +2034,29 @@ document.addEventListener('DOMContentLoaded', function () {
       ''
     ).trim().toLowerCase();
 
+  const isSortField = (field) => {
+    const sortSignals = [
+      field.name,
+      field.id,
+      field.className,
+      field.getAttribute('fs-list-sort'),
+      field.getAttribute('fs-cmssort-field'),
+      field.getAttribute('data-sort'),
+      field.getAttribute('data-order')
+    ]
+      .filter((value) => typeof value === 'string' && value.trim() !== '')
+      .join(' ')
+      .toLowerCase();
+
+    if (sortSignals.includes('sort') || sortSignals.includes('order')) {
+      return true;
+    }
+
+    return Boolean(
+      field.closest('[fs-list-sort], [fs-cmssort-element], [data-sort], .sort, .sort-select, .sort-dropdown]')
+    );
+  };
+
   const isActiveChoice = (field) => {
     const value = getFilterOptionValue(field);
     return value !== '' && value !== 'all' && value !== 'any';
@@ -2041,6 +2064,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const hasActiveFilters = (form) =>
     Array.from(form.querySelectorAll(FILTER_FIELD_SELECTOR)).some((field) => {
+      if (isSortField(field)) {
+        return false;
+      }
+
       if (field.type === 'checkbox' || field.type === 'radio') {
         return field.checked && !field.defaultChecked && isActiveChoice(field);
       }
