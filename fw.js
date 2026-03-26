@@ -1995,100 +1995,14 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 
 (() => {
-  const FILTER_FIELD_SELECTOR = 'input, select, textarea';
+  const hasActiveFilters = (form) => {
+    const hasActiveDropdown = Boolean(form.querySelector('.dropdown.has-selection'));
+    const hasActiveCheckbox = Array.from(
+      form.querySelectorAll('input[type="checkbox"][fs-list-element="filter"]')
+    ).some((field) => field.checked);
 
-  const getSelectState = (select, useDefault = false) => {
-    const options = Array.from(select.options);
-    const selected = options.filter((option) => (useDefault ? option.defaultSelected : option.selected));
-    return selected.map((option) => option.value.trim()).join('||');
+    return hasActiveDropdown || hasActiveCheckbox;
   };
-
-  const getFieldState = (field, useDefault = false) => {
-    if (
-      field.disabled ||
-      field.type === 'hidden' ||
-      field.type === 'submit' ||
-      field.type === 'button' ||
-      field.type === 'reset'
-    ) {
-      return null;
-    }
-
-    if (field.type === 'checkbox' || field.type === 'radio') {
-      return useDefault ? field.defaultChecked : field.checked;
-    }
-
-    if (field.tagName === 'SELECT') {
-      return getSelectState(field, useDefault);
-    }
-
-    const value = useDefault ? field.defaultValue : field.value;
-    return value.trim();
-  };
-
-  const getFieldLabelText = (field) => {
-    const wrapper = field.closest('.w-radio, .w-checkbox, label');
-    const nestedLabel = wrapper?.querySelector('.radio-label, .brand-filter-label, .w-form-label');
-    const siblingLabel = field.nextElementSibling;
-    return (
-      nestedLabel?.textContent ||
-      siblingLabel?.textContent ||
-      wrapper?.textContent ||
-      ''
-    ).trim();
-  };
-
-  const getFilterOptionValue = (field) =>
-    (
-      field.getAttribute('fs-list-value') ||
-      field.value ||
-      field.getAttribute('value') ||
-      getFieldLabelText(field) ||
-      ''
-    ).trim().toLowerCase();
-
-  const isSortField = (field) => {
-    const sortSignals = [
-      field.name,
-      field.id,
-      field.className,
-      field.getAttribute('fs-list-sort'),
-      field.getAttribute('fs-cmssort-field'),
-      field.getAttribute('data-sort'),
-      field.getAttribute('data-order')
-    ]
-      .filter((value) => typeof value === 'string' && value.trim() !== '')
-      .join(' ')
-      .toLowerCase();
-
-    if (sortSignals.includes('sort') || sortSignals.includes('order')) {
-      return true;
-    }
-
-    return Boolean(
-      field.closest('[fs-list-sort], [fs-cmssort-element], [data-sort], .sort, .sort-select, .sort-dropdown]')
-    );
-  };
-
-  const isActiveChoice = (field) => {
-    const value = getFilterOptionValue(field);
-    return value !== '' && value !== 'all' && value !== 'any';
-  };
-
-  const hasActiveFilters = (form) =>
-    Array.from(form.querySelectorAll(FILTER_FIELD_SELECTOR)).some((field) => {
-      if (isSortField(field)) {
-        return false;
-      }
-
-      if (field.type === 'checkbox' || field.type === 'radio') {
-        return field.checked && isActiveChoice(field);
-      }
-
-      const current = getFieldState(field, false);
-      const initial = getFieldState(field, true);
-      return current !== null && current !== initial;
-    });
 
   const setupResetLink = () => {
     const form = document.querySelector('form[fs-list-element="filters"]');
