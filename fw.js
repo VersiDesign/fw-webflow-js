@@ -2069,7 +2069,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       if (field.type === 'checkbox' || field.type === 'radio') {
-        return field.checked && !field.defaultChecked && isActiveChoice(field);
+        return field.checked && isActiveChoice(field);
       }
 
       const current = getFieldState(field, false);
