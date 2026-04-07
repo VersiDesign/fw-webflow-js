@@ -841,7 +841,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (faceWrap) {
       var noSheetsOpen = (activeIndex === null && !brandPanelOpen);
-      if (mobileNavMode && noSheetsOpen) faceWrap.style.zIndex = '1401';
+      if (mobileNavMode && noSheetsOpen) faceWrap.style.zIndex = '1501';
       else faceWrap.style.zIndex = '';
     }
 
