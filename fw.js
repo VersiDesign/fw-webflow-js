@@ -401,13 +401,18 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
 
+      if (maxScroll <= 0) {
+        rail.style.opacity = '0';
+        thumb.style.height = '';
+        thumb.style.transform = '';
+        return;
+      }
+
       rail.style.opacity = '1';
 
       var trackH = rail.clientHeight || clientH;
       var minThumbH = 36;
-      var thumbH = (maxScroll <= 0)
-        ? trackH
-        : Math.max(minThumbH, Math.round(trackH * (clientH / scrollH)));
+      var thumbH = Math.max(minThumbH, Math.round(trackH * (clientH / scrollH)));
       var maxTop = Math.max(0, trackH - thumbH);
       var top = maxScroll ? Math.round((list.scrollTop / maxScroll) * maxTop) : 0;
 
