@@ -150,6 +150,56 @@ document.addEventListener('DOMContentLoaded', function () {
   })();
 
   // =======================================================================
+  // SORT TOGGLE
+  // =======================================================================
+  (function setupSortToggle() {
+    var trigger = document.querySelector('.select-sort__trigger');
+    var select = document.querySelector('.select-sort');
+
+    if (!trigger || !select || !select.options) return;
+    if (trigger.dataset.sortToggleBound === '1') return;
+    trigger.dataset.sortToggleBound = '1';
+
+    function getRealOptions() {
+      return Array.prototype.slice.call(select.options).filter(function (option) {
+        return option.value !== '';
+      });
+    }
+
+    function renderTrigger() {
+      var options = getRealOptions();
+      if (options.length !== 2) return;
+
+      var isDefault = select.value === options[0].value;
+
+      trigger.innerHTML = [
+        '<span class="sort-toggle ' + (isDefault ? 'is-az' : 'is-za') + '">',
+          '<span class="sort-toggle__label">Sort:</span>',
+          '<span class="sort-toggle__arrows" aria-hidden="true">',
+            '<svg class="sort-toggle__arrow sort-toggle__arrow--left" viewBox="0 0 12 22" aria-hidden="true">',
+              '<path d="M6 4 V18 M2.9 14.8 L6 18 L9.1 14.8" />',
+            '</svg>',
+            '<svg class="sort-toggle__arrow sort-toggle__arrow--right" viewBox="0 0 12 22" aria-hidden="true">',
+              '<path d="M6 4 V18 M2.9 14.8 L6 18 L9.1 14.8" />',
+            '</svg>',
+          '</span>',
+        '</span>'
+      ].join('');
+    }
+
+    trigger.addEventListener('click', function () {
+      var options = getRealOptions();
+      if (options.length !== 2) return;
+
+      select.value = (select.value === options[0].value) ? options[1].value : options[0].value;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      renderTrigger();
+    });
+
+    renderTrigger();
+  })();
+
+  // =======================================================================
   // TRADE BACK BUTTON: always navigate to previous page
   // =======================================================================
   (function setupTradeBackButton() {
