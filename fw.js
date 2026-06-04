@@ -1967,7 +1967,8 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 (() => {
-  const TOGGLE_TEXT_SELECTOR = '.dropdown-placeholder.filter-placeholder';
+  const TOGGLE_TEXT_SELECTOR =
+    '.dropdown-placeholder.filter-placeholder, .dropdown-placeholder-wrap .dropdown-placeholder';
 
   const getFilterDropdowns = () =>
     Array.from(document.querySelectorAll('.dropdown')).filter((dropdown) =>
