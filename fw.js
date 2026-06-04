@@ -2165,7 +2165,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setupDropdownFilter('region', '.clear-region', '.region-toggle-text', 'Region');
     setupDropdownFilter('spirit', '.clear-spirit', '.spirit-toggle-text', 'Spirit');
     setupDropdownFilter('format', '.clear-format', '.format-toggle-text', 'Format');
-    setupDropdownFilter('strength', '.clear-strength', '.strength-toggle-text', 'Alcohol');
+    setupDropdownFilter('alcohol', '.clear-alcohol', '.alcohol-toggle-text', 'Alcohol');
   }
 
   if (document.readyState === 'loading') {
