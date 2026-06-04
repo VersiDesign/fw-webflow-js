@@ -2104,3 +2104,74 @@ document.addEventListener('DOMContentLoaded', function () {
 
   setupResetLink();
 })();
+
+(() => {
+  function setupDropdownFilter(groupName, clearSelector, toggleTextSelector, defaultLabel) {
+    const clearBtn = document.querySelector(clearSelector);
+    const toggleText = document.querySelector(toggleTextSelector);
+
+    if (!clearBtn || !toggleText || clearBtn.dataset.dropdownFilterBound === 'true') return;
+
+    clearBtn.dataset.dropdownFilterBound = 'true';
+
+    const radios = () => [...document.querySelectorAll(`input[type="radio"][name="${groupName}"]`)];
+
+    function getCheckedRadio() {
+      return radios().find((radio) => radio.checked);
+    }
+
+    function getLabelText(radio) {
+      const wrapper = radio.closest('.collection-item_radio');
+      const label = wrapper?.querySelector('.item-link');
+      return label?.textContent?.trim() || defaultLabel;
+    }
+
+    function updateUI() {
+      const checked = getCheckedRadio();
+      clearBtn.style.display = checked ? 'inline-block' : 'none';
+      toggleText.textContent = checked ? getLabelText(checked) : defaultLabel;
+    }
+
+    clearBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      radios().forEach((radio) => {
+        radio.checked = false;
+      });
+
+      const firstRadio = radios()[0];
+      if (firstRadio) {
+        firstRadio.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      updateUI();
+    });
+
+    document.addEventListener('change', (event) => {
+      if (event.target.matches(`input[type="radio"][name="${groupName}"]`)) {
+        updateUI();
+      }
+    });
+
+    window.addEventListener('pageshow', updateUI);
+    updateUI();
+  }
+
+  function setupDropdownFilters() {
+    setupDropdownFilter('brand', '.clear-brand', '.brand-toggle-text', 'Brand');
+    setupDropdownFilter('variety', '.clear-variety', '.variety-toggle-text', 'Variety');
+    setupDropdownFilter('style', '.clear-style', '.style-toggle-text', 'Style');
+    setupDropdownFilter('region', '.clear-region', '.region-toggle-text', 'Region');
+    setupDropdownFilter('spirit', '.clear-spirit', '.spirit-toggle-text', 'Spirit');
+    setupDropdownFilter('format', '.clear-format', '.format-toggle-text', 'Format');
+    setupDropdownFilter('strength', '.clear-strength', '.strength-toggle-text', 'Alcohol');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupDropdownFilters);
+    return;
+  }
+
+  setupDropdownFilters();
+})();
