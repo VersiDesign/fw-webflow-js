@@ -2007,15 +2007,27 @@ document.addEventListener('DOMContentLoaded', function () {
     );
   };
 
+  const isActiveSelection = (dropdown, input) => {
+    if (!input) return false;
+
+    const label = getLabelText(input).trim().toLowerCase();
+    const defaultLabel = getDefaultLabel(dropdown).trim().toLowerCase();
+    return Boolean(label && label !== defaultLabel);
+  };
+
   const updateDropdownToggle = (dropdown, selectedInput) => {
     const toggleText = getDropdownPlaceholder(dropdown);
     if (!toggleText) return;
 
-    const checked =
-      Array.from(dropdown.querySelectorAll('input[type="radio"]')).find((input) => input.checked) ||
-      selectedInput;
-    dropdown.classList.toggle('has-selection', Boolean(checked));
-    toggleText.textContent = checked ? getLabelText(checked) : getDefaultLabel(dropdown);
+    const checked = Array.from(dropdown.querySelectorAll('input[type="radio"]')).find(
+      (input) => input.checked && isActiveSelection(dropdown, input)
+    );
+    const selection = checked || (
+      isActiveSelection(dropdown, selectedInput) ? selectedInput : undefined
+    );
+
+    dropdown.classList.toggle('has-selection', Boolean(selection));
+    toggleText.textContent = selection ? getLabelText(selection) : getDefaultLabel(dropdown);
   };
 
   const closeDropdownForInput = (input) => {
@@ -2064,9 +2076,16 @@ document.addEventListener('DOMContentLoaded', function () {
     getFilterDropdowns().forEach(updateDropdownToggle);
   };
 
+  const resyncDropdownToggles = () => {
+    [0, 50, 150, 400, 1000].forEach((delay) => {
+      window.setTimeout(updateAllDropdownToggles, delay);
+    });
+  };
+
   document.addEventListener('DOMContentLoaded', updateAllDropdownToggles);
-  window.addEventListener('load', updateAllDropdownToggles);
-  window.addEventListener('pageshow', updateAllDropdownToggles);
+  window.addEventListener('load', resyncDropdownToggles);
+  window.addEventListener('pageshow', resyncDropdownToggles);
+  window.addEventListener('popstate', resyncDropdownToggles);
 })();
 
 (() => {
@@ -2126,7 +2145,7 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 
 (() => {
-  function setupDropdownFilter(groupName, clearSelector, toggleTextSelector, defaultLabel) {
+  function setupDropdownFilter(groupName, clearSelector, toggleTextSelector) {
     const clearBtn = document.querySelector(clearSelector);
     const toggleText = document.querySelector(toggleTextSelector);
 
@@ -2140,16 +2159,9 @@ document.addEventListener('DOMContentLoaded', function () {
       return radios().find((radio) => radio.checked);
     }
 
-    function getLabelText(radio) {
-      const wrapper = radio.closest('.collection-item_radio');
-      const label = wrapper?.querySelector('.item-link');
-      return label?.textContent?.trim() || defaultLabel;
-    }
-
     function updateUI() {
       const checked = getCheckedRadio();
       clearBtn.style.display = checked ? 'inline-block' : 'none';
-      toggleText.textContent = checked ? getLabelText(checked) : defaultLabel;
     }
 
     clearBtn.addEventListener('click', (event) => {
@@ -2174,18 +2186,22 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
 
-    window.addEventListener('pageshow', updateUI);
+    window.addEventListener('pageshow', () => {
+      [0, 50, 150, 400, 1000].forEach((delay) => {
+        window.setTimeout(updateUI, delay);
+      });
+    });
     updateUI();
   }
 
   function setupDropdownFilters() {
-    setupDropdownFilter('brand', '.clear-brand', '.brand-toggle-text', 'Brand');
-    setupDropdownFilter('variety', '.clear-variety', '.variety-toggle-text', 'Variety');
-    setupDropdownFilter('style', '.clear-style', '.style-toggle-text', 'Style');
-    setupDropdownFilter('region', '.clear-region', '.region-toggle-text', 'Region');
-    setupDropdownFilter('spirit', '.clear-spirit', '.spirit-toggle-text', 'Spirit');
-    setupDropdownFilter('format', '.clear-format', '.format-toggle-text', 'Format');
-    setupDropdownFilter('alcohol', '.clear-alcohol', '.alcohol-toggle-text', 'Alcohol');
+    setupDropdownFilter('brand', '.clear-brand', '.brand-toggle-text');
+    setupDropdownFilter('variety', '.clear-variety', '.variety-toggle-text');
+    setupDropdownFilter('style', '.clear-style', '.style-toggle-text');
+    setupDropdownFilter('region', '.clear-region', '.region-toggle-text');
+    setupDropdownFilter('spirit', '.clear-spirit', '.spirit-toggle-text');
+    setupDropdownFilter('format', '.clear-format', '.format-toggle-text');
+    setupDropdownFilter('alcohol', '.clear-alcohol', '.alcohol-toggle-text');
   }
 
   if (document.readyState === 'loading') {
