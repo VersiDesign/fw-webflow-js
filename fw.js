@@ -1967,8 +1967,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 (() => {
-  const TOGGLE_TEXT_SELECTOR =
-    '.dropdown-placeholder.filter-placeholder, .dropdown-placeholder-wrap .dropdown-placeholder';
+  const TOGGLE_TEXT_SELECTOR = '.dropdown-placeholder';
 
   const getFilterDropdowns = () =>
     Array.from(document.querySelectorAll('.dropdown')).filter((dropdown) =>
@@ -1993,8 +1992,10 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   const getLabelText = (input) => {
-    const field = input.closest('.w-radio, label');
-    const nestedLabel = field?.querySelector('.radio-label, .brand-filter-label, .w-form-label');
+    const field = input.closest('.collection-item_radio, .w-radio, label');
+    const nestedLabel = field?.querySelector(
+      '.item-link, .radio-label, .brand-filter-label, .w-form-label'
+    );
     const siblingLabel = input.nextElementSibling;
     const siblingText = siblingLabel?.textContent?.trim();
     return (
@@ -2006,11 +2007,13 @@ document.addEventListener('DOMContentLoaded', function () {
     );
   };
 
-  const updateDropdownToggle = (dropdown) => {
+  const updateDropdownToggle = (dropdown, selectedInput) => {
     const toggleText = getDropdownPlaceholder(dropdown);
     if (!toggleText) return;
 
-    const checked = Array.from(dropdown.querySelectorAll('input[type="radio"]')).find((input) => input.checked);
+    const checked =
+      Array.from(dropdown.querySelectorAll('input[type="radio"]')).find((input) => input.checked) ||
+      selectedInput;
     dropdown.classList.toggle('has-selection', Boolean(checked));
     toggleText.textContent = checked ? getLabelText(checked) : getDefaultLabel(dropdown);
   };
@@ -2030,15 +2033,31 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   };
 
-  document.addEventListener('change', (event) => {
-    const input = event.target;
-    if (input?.matches?.('input[type="radio"]')) {
-      const dropdown = input.closest('.dropdown');
-      if (!dropdown || !getDropdownPlaceholder(dropdown)) return;
+  const scheduleDropdownUpdate = (input, useInputAsSelection = false) => {
+    const dropdown = input?.closest?.('.dropdown');
+    if (!dropdown || !getDropdownPlaceholder(dropdown)) return;
+    const selectedInput = useInputAsSelection ? input : undefined;
 
-      updateDropdownToggle(dropdown);
-      closeDropdownForInput(event.target);
-    }
+    window.requestAnimationFrame(() => {
+      updateDropdownToggle(dropdown, selectedInput);
+      closeDropdownForInput(input);
+    });
+    window.setTimeout(() => updateDropdownToggle(dropdown, selectedInput), 0);
+  };
+
+  document.addEventListener('click', (event) => {
+    const option = event.target?.closest?.('.collection-item_radio, .w-radio, label');
+    const input = option?.querySelector?.('input[type="radio"]');
+    if (input) scheduleDropdownUpdate(input, true);
+  }, true);
+
+  ['input', 'change'].forEach((eventName) => {
+    document.addEventListener(eventName, (event) => {
+      const input = event.target;
+      if (input?.matches?.('input[type="radio"]')) {
+        scheduleDropdownUpdate(input);
+      }
+    });
   });
 
   const updateAllDropdownToggles = () => {
