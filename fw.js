@@ -2204,6 +2204,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const LOADING_CLASS = 'is-catalogue-loading';
   const OVERLAY_CLASS = 'catalogue-loading-overlay';
   const STORAGE_KEY = 'fwwProductsCatalogueLoadedCount';
+  const SESSION_SHOWN_KEY = 'fwwProductsCatalogueLoaderShown';
   const DEFAULT_EXPECTED_PRODUCT_COUNT = 269;
   const READY_STABLE_MS = 700;
   const MAX_WAIT_MS = 45000;
@@ -2230,6 +2231,20 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (e) {
       return false;
     }
+  };
+
+  const hasShownLoaderThisSession = (expectedCount) => {
+    try {
+      return window.sessionStorage?.getItem(SESSION_SHOWN_KEY) === String(expectedCount);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const rememberShownLoaderThisSession = (expectedCount) => {
+    try {
+      window.sessionStorage?.setItem(SESSION_SHOWN_KEY, String(expectedCount));
+    } catch (e) {}
   };
 
   const rememberLoadedCatalogue = (expectedCount) => {
@@ -2330,6 +2345,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const expectedCount = getExpectedProductCount();
     if (hasLoadedCatalogueBefore(expectedCount)) return;
+    if (hasShownLoaderThisSession(expectedCount)) return;
+    rememberShownLoaderThisSession(expectedCount);
 
     const root = document.documentElement;
     const overlay = createOverlay();
@@ -2380,10 +2397,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const scheduleFinishWhenStable = () => {
       updateProgress();
       if (done || !hasLoadedExpectedCatalogue()) return;
-      if (readyTimer) window.clearTimeout(readyTimer);
+      if (readyTimer) return;
       readyTimer = window.setTimeout(() => {
         updateProgress();
         if (hasLoadedExpectedCatalogue()) finish(true);
+        else readyTimer = null;
       }, READY_STABLE_MS);
     };
 
