@@ -2313,6 +2313,7 @@ document.addEventListener('DOMContentLoaded', function () {
       '<div class="catalogue-loading-overlay__inner">',
         '<span class="catalogue-loading-overlay__spinner" aria-hidden="true"></span>',
         '<span>Loading catalogue</span>',
+        '<span class="catalogue-loading-overlay__percent">0%</span>',
       '</div>'
     ].join('');
 
@@ -2329,6 +2330,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const root = document.documentElement;
     const overlay = createOverlay();
+    const percentText = overlay.querySelector('.catalogue-loading-overlay__percent');
     let readyTimer = null;
     let listObserver = null;
     let bodyObserver = null;
@@ -2358,13 +2360,25 @@ document.addEventListener('DOMContentLoaded', function () {
       return getProductItems(list).length;
     };
 
+    const currentLoadedCount = () =>
+      Math.max(loadedItemCount(), reportedCatalogueCount());
+
+    const updateProgress = () => {
+      if (!percentText) return;
+
+      const progress = Math.min(100, Math.round((currentLoadedCount() / expectedCount) * 100));
+      percentText.textContent = progress + '%';
+    };
+
     const hasLoadedExpectedCatalogue = () =>
-      loadedItemCount() >= expectedCount || reportedCatalogueCount() >= expectedCount;
+      currentLoadedCount() >= expectedCount;
 
     const scheduleFinishWhenStable = () => {
+      updateProgress();
       if (done || !hasLoadedExpectedCatalogue()) return;
       if (readyTimer) window.clearTimeout(readyTimer);
       readyTimer = window.setTimeout(() => {
+        updateProgress();
         if (hasLoadedExpectedCatalogue()) finish(true);
       }, READY_STABLE_MS);
     };
@@ -2394,6 +2408,7 @@ document.addEventListener('DOMContentLoaded', function () {
       window.setTimeout(scheduleFinishWhenStable, delay);
     });
 
+    updateProgress();
     window.addEventListener('load', scheduleFinishWhenStable);
     window.setTimeout(() => finish(false), MAX_WAIT_MS);
   };
