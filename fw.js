@@ -2207,6 +2207,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const DEFAULT_EXPECTED_PRODUCT_COUNT = 269;
   const READY_STABLE_MS = 700;
   const MAX_WAIT_MS = 45000;
+  const PROGRESS_POLL_MS = 250;
 
   const isProductsPage = () => {
     const path = window.location?.pathname || '';
@@ -2255,6 +2256,18 @@ document.addEventListener('DOMContentLoaded', function () {
     return Array.from(list.children).filter((child) => child.nodeType === 1);
   };
 
+  const getCountCandidates = () =>
+    Array.from(document.querySelectorAll([
+      '[data-catalogue-loaded-count]',
+      '[fs-list-element*="count"]',
+      '[fs-list-element*="total"]',
+      '[fs-list-element*="result"]',
+      '[class*="pagination"]',
+      '[class*="count"]',
+      '[class*="total"]',
+      '[class*="result"]'
+    ].join(','))).filter(isReadableCountElement);
+
   const isReadableCountElement = (element) => {
     if (!element || element.matches('[data-catalogue-expected-count]')) return false;
 
@@ -2281,22 +2294,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 0);
   };
 
-  const reportedCatalogueCount = () => {
+  const reportedCatalogueCount = (countCandidates) => {
     const explicitLoaded = document.querySelector('[data-catalogue-loaded-count]');
     const explicitCount = parseInt(explicitLoaded?.getAttribute('data-catalogue-loaded-count'), 10);
     if (Number.isFinite(explicitCount) && explicitCount > 0) return explicitCount;
 
-    const candidates = Array.from(document.querySelectorAll([
-      '[fs-list-element*="count"]',
-      '[fs-list-element*="total"]',
-      '[fs-list-element*="result"]',
-      '[class*="pagination"]',
-      '[class*="count"]',
-      '[class*="total"]',
-      '[class*="result"]'
-    ].join(','))).filter(isReadableCountElement);
-
-    return candidates.reduce((max, element) => {
+    return countCandidates.reduce((max, element) => {
       return Math.max(max, parseLargestNumber(element.textContent));
     }, 0);
   };
@@ -2331,9 +2334,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const root = document.documentElement;
     const overlay = createOverlay();
     const percentText = overlay.querySelector('.catalogue-loading-overlay__percent');
+    const countCandidates = getCountCandidates();
     let readyTimer = null;
     let listObserver = null;
-    let bodyObserver = null;
+    let progressInterval = null;
     let done = false;
 
     root.classList.add(LOADING_CLASS);
@@ -2344,7 +2348,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       if (readyTimer) window.clearTimeout(readyTimer);
       if (listObserver) listObserver.disconnect();
-      if (bodyObserver) bodyObserver.disconnect();
+      if (progressInterval) window.clearInterval(progressInterval);
       if (rememberLoaded) rememberLoadedCatalogue(expectedCount);
       root.classList.remove(LOADING_CLASS);
       overlay.classList.add('is-hidden');
@@ -2361,7 +2365,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     const currentLoadedCount = () =>
-      Math.max(loadedItemCount(), reportedCatalogueCount());
+      Math.max(loadedItemCount(), reportedCatalogueCount(countCandidates));
 
     const updateProgress = () => {
       if (!percentText) return;
@@ -2388,21 +2392,11 @@ document.addEventListener('DOMContentLoaded', function () {
       listObserver = new MutationObserver(scheduleFinishWhenStable);
       listObserver.observe(list, {
         subtree: true,
-        childList: true,
-        characterData: true,
-        attributes: true,
-        attributeFilter: ['class', 'style', 'hidden']
+        childList: true
       });
     }
 
-    bodyObserver = new MutationObserver(scheduleFinishWhenStable);
-    bodyObserver.observe(document.body, {
-      subtree: true,
-      childList: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: ['class', 'style', 'hidden', 'data-catalogue-loaded-count']
-    });
+    progressInterval = window.setInterval(scheduleFinishWhenStable, PROGRESS_POLL_MS);
 
     [0, 150, 400, 800, 1400, 2200, 3500].forEach((delay) => {
       window.setTimeout(scheduleFinishWhenStable, delay);
