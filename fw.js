@@ -2203,12 +2203,38 @@ document.addEventListener('DOMContentLoaded', function () {
   const PRODUCT_PATH_RE = /^\/products\/?$/;
   const LOADING_CLASS = 'is-catalogue-loading';
   const OVERLAY_CLASS = 'catalogue-loading-overlay';
+  const STORAGE_KEY = 'fwwProductsCatalogueLoadedCount';
+  const DEFAULT_EXPECTED_PRODUCT_COUNT = 269;
   const READY_STABLE_MS = 700;
-  const MAX_WAIT_MS = 12000;
+  const MAX_WAIT_MS = 45000;
 
   const isProductsPage = () => {
     const path = window.location?.pathname || '';
     return PRODUCT_PATH_RE.test(path);
+  };
+
+  const getExpectedProductCount = () => {
+    const expectedSource = document.querySelector('[data-catalogue-expected-count]');
+    const expectedValue = expectedSource?.getAttribute('data-catalogue-expected-count');
+    const expectedCount = parseInt(expectedValue, 10);
+
+    return Number.isFinite(expectedCount) && expectedCount > 0
+      ? expectedCount
+      : DEFAULT_EXPECTED_PRODUCT_COUNT;
+  };
+
+  const hasLoadedCatalogueBefore = (expectedCount) => {
+    try {
+      return window.localStorage?.getItem(STORAGE_KEY) === String(expectedCount);
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const rememberLoadedCatalogue = (expectedCount) => {
+    try {
+      window.localStorage?.setItem(STORAGE_KEY, String(expectedCount));
+    } catch (e) {}
   };
 
   const getProductList = () =>
@@ -2252,6 +2278,9 @@ document.addEventListener('DOMContentLoaded', function () {
   const setupCatalogueLoadingGuard = () => {
     if (!isProductsPage()) return;
 
+    const expectedCount = getExpectedProductCount();
+    if (hasLoadedCatalogueBefore(expectedCount)) return;
+
     const root = document.documentElement;
     const overlay = createOverlay();
     let readyTimer = null;
@@ -2261,13 +2290,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     root.classList.add(LOADING_CLASS);
 
-    const finish = () => {
+    const finish = (rememberLoaded) => {
       if (done) return;
       done = true;
 
       if (readyTimer) window.clearTimeout(readyTimer);
       if (listObserver) listObserver.disconnect();
       if (bodyObserver) bodyObserver.disconnect();
+      if (rememberLoaded) rememberLoadedCatalogue(expectedCount);
       root.classList.remove(LOADING_CLASS);
       overlay.classList.add('is-hidden');
       overlay.classList.remove('is-visible');
@@ -2277,19 +2307,16 @@ document.addEventListener('DOMContentLoaded', function () {
       }, 300);
     };
 
-    const visibleItemCount = () => {
+    const loadedItemCount = () => {
       const list = getProductList();
-      return getProductItems(list).filter((item) => {
-        const style = window.getComputedStyle(item);
-        return style.display !== 'none' && style.visibility !== 'hidden';
-      }).length;
+      return getProductItems(list).length;
     };
 
     const scheduleFinishWhenStable = () => {
-      if (done || visibleItemCount() < 1) return;
+      if (done || loadedItemCount() < expectedCount) return;
       if (readyTimer) window.clearTimeout(readyTimer);
       readyTimer = window.setTimeout(() => {
-        if (visibleItemCount() > 0) finish();
+        if (loadedItemCount() >= expectedCount) finish(true);
       }, READY_STABLE_MS);
     };
 
@@ -2315,7 +2342,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     window.addEventListener('load', scheduleFinishWhenStable);
-    window.setTimeout(finish, MAX_WAIT_MS);
+    window.setTimeout(() => finish(false), MAX_WAIT_MS);
   };
 
   if (document.readyState === 'loading') {
