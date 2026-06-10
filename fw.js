@@ -225,6 +225,239 @@ document.addEventListener('DOMContentLoaded', function () {
     }, { passive: false });
   })();
 
+  // =======================================================================
+  // ENQUIRY CART
+  // =======================================================================
+  (function setupEnquiryCart() {
+    var CART_KEY = 'fwwEnquiryCart';
+
+    function getCart() {
+      try {
+        return JSON.parse(localStorage.getItem(CART_KEY)) || [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveCart(cart) {
+      localStorage.setItem(CART_KEY, JSON.stringify(cart));
+      updateCartCount();
+    }
+
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, function (char) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[char];
+      });
+    }
+
+    function addToCart(product, button) {
+      var cart = getCart();
+      var existing = cart.find(function (item) {
+        return item.sku === product.sku;
+      });
+
+      if (!existing) {
+        cart.push({
+          name: product.name,
+          sku: product.sku,
+          brand: product.brand,
+          quantity: ''
+        });
+      }
+
+      saveCart(cart);
+      renderCart();
+      showCartMessage(button, 'Added to enquiry cart');
+    }
+
+    function showCartMessage(button, message) {
+      var existing = document.querySelector('.cart-toast');
+      if (existing) existing.remove();
+
+      var toast = document.createElement('div');
+      toast.className = 'cart-toast';
+      toast.textContent = message;
+
+      document.body.appendChild(toast);
+
+      var rect = button.getBoundingClientRect();
+      toast.style.left = (window.scrollX + rect.left) + 'px';
+      toast.style.top = (window.scrollY + rect.top - toast.offsetHeight - 8) + 'px';
+
+      requestAnimationFrame(function () {
+        toast.classList.add('is-visible');
+      });
+
+      setTimeout(function () {
+        toast.classList.remove('is-visible');
+        setTimeout(function () {
+          toast.remove();
+        }, 250);
+      }, 2000);
+    }
+
+    function updateCartCount() {
+      var cart = getCart();
+      var totalProducts = cart.length;
+
+      document.querySelectorAll('[data-cart-count]').forEach(function (el) {
+        el.textContent = totalProducts;
+      });
+    }
+
+    function renderCart() {
+      var list = document.querySelector('.cart-list');
+      var empty = document.querySelector('.cart-empty');
+      var cartDataField = document.querySelector('.cart-data');
+
+      if (!list) return;
+
+      var cart = getCart();
+      list.innerHTML = '';
+
+      if (!cart.length) {
+        if (empty) empty.style.display = 'block';
+        if (cartDataField) cartDataField.value = '';
+        return;
+      }
+
+      if (empty) empty.style.display = 'none';
+
+      cart.forEach(function (item) {
+        var row = document.createElement('div');
+        row.className = 'cart-row';
+        row.innerHTML = [
+          '<div class="cart-product">',
+            '<strong>' + escapeHtml(item.name) + '</strong><br>',
+            '<span>Brand: ' + escapeHtml(item.brand) + '</span><br>',
+            '<span>SKU: ' + escapeHtml(item.sku) + '</span>',
+          '</div>',
+          '<div class="cart-qty">',
+            '<label>Quantity:</label>',
+            '<input type="text" placeholder="Enter a quantity" value="' + escapeHtml(item.quantity) + '" class="cart-quantity" data-sku="' + escapeHtml(item.sku) + '">',
+          '</div>',
+          '<button type="button" class="cart-remove" data-sku="' + escapeHtml(item.sku) + '">Remove</button>'
+        ].join('');
+        list.appendChild(row);
+      });
+
+      updateCartDataField();
+    }
+
+    function updateCartDataField() {
+      var cart = getCart();
+      var cartDataField = document.querySelector('.cart-data');
+
+      if (!cartDataField) return;
+
+      var summary = '<br><br>' + cart.map(function (item) {
+        return [
+          item.name,
+          'Quantity: ' + (item.quantity || 'Not specified'),
+          'Brand: ' + item.brand,
+          'SKU: ' + item.sku
+        ].join('<br>');
+      }).join('<br><br>') + '<br><br>';
+
+      cartDataField.value = summary;
+    }
+
+    document.addEventListener('click', function (e) {
+      var addBtn = e.target && e.target.closest ? e.target.closest('.add-to-enquiry') : null;
+
+      if (addBtn) {
+        e.preventDefault();
+
+        var product = {
+          name: addBtn.getAttribute('data-product-name'),
+          sku: addBtn.getAttribute('data-product-sku'),
+          brand: addBtn.getAttribute('data-product-brand')
+        };
+
+        if (!product.sku) {
+          alert('This product is missing a SKU.');
+          return;
+        }
+
+        addToCart(product, addBtn);
+        return;
+      }
+
+      var remove = e.target && e.target.closest ? e.target.closest('.cart-remove') : null;
+
+      if (remove) {
+        var sku = remove.getAttribute('data-sku');
+        var cart = getCart().filter(function (item) {
+          return item.sku !== sku;
+        });
+
+        saveCart(cart);
+        renderCart();
+      }
+    });
+
+    document.addEventListener('input', function (e) {
+      if (!e.target.classList.contains('cart-quantity')) return;
+
+      var sku = e.target.getAttribute('data-sku');
+      var qty = e.target.value;
+      var cart = getCart();
+      var item = cart.find(function (cartItem) {
+        return cartItem.sku === sku;
+      });
+
+      if (item) {
+        item.quantity = qty;
+        saveCart(cart);
+        updateCartDataField();
+      }
+    });
+
+    document.addEventListener('submit', function (e) {
+      if (!e.target.classList.contains('enquiry-form')) return;
+
+      updateCartDataField();
+
+      var cart = getCart();
+      if (!cart.length) {
+        e.preventDefault();
+        alert('Please add at least one product to your enquiry cart.');
+      }
+    });
+
+    updateCartCount();
+    renderCart();
+
+    var enquiryForm = document.querySelector('.enquiry-form');
+
+    if (enquiryForm) {
+      var successMessage = enquiryForm.parentElement.querySelector('.w-form-done');
+
+      if (successMessage) {
+        var observer = new MutationObserver(function () {
+          var isSuccessVisible = window.getComputedStyle(successMessage).display !== 'none';
+
+          if (isSuccessVisible) {
+            localStorage.removeItem(CART_KEY);
+            updateCartCount();
+            renderCart();
+          }
+        });
+
+        observer.observe(successMessage, {
+          attributes: true,
+          attributeFilter: ['style', 'class']
+        });
+      }
+    }
+  })();
+
   setupCustomDropdowns();
 
   // If neither overlay nor ageGate exists, nothing else to do
