@@ -2255,6 +2255,52 @@ document.addEventListener('DOMContentLoaded', function () {
     return Array.from(list.children).filter((child) => child.nodeType === 1);
   };
 
+  const isReadableCountElement = (element) => {
+    if (!element || element.matches('[data-catalogue-expected-count]')) return false;
+
+    const style = window.getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+
+    const label = [
+      element.className,
+      element.id,
+      element.getAttribute('fs-list-element'),
+      element.getAttribute('data-catalogue-loaded-count')
+    ].join(' ').toLowerCase();
+
+    return /pagination|count|total|result/.test(label);
+  };
+
+  const parseLargestNumber = (text) => {
+    const matches = String(text || '').match(/\d[\d,]*/g);
+    if (!matches) return 0;
+
+    return matches.reduce((max, value) => {
+      const number = parseInt(value.replace(/,/g, ''), 10);
+      return Number.isFinite(number) ? Math.max(max, number) : max;
+    }, 0);
+  };
+
+  const reportedCatalogueCount = () => {
+    const explicitLoaded = document.querySelector('[data-catalogue-loaded-count]');
+    const explicitCount = parseInt(explicitLoaded?.getAttribute('data-catalogue-loaded-count'), 10);
+    if (Number.isFinite(explicitCount) && explicitCount > 0) return explicitCount;
+
+    const candidates = Array.from(document.querySelectorAll([
+      '[fs-list-element*="count"]',
+      '[fs-list-element*="total"]',
+      '[fs-list-element*="result"]',
+      '[class*="pagination"]',
+      '[class*="count"]',
+      '[class*="total"]',
+      '[class*="result"]'
+    ].join(','))).filter(isReadableCountElement);
+
+    return candidates.reduce((max, element) => {
+      return Math.max(max, parseLargestNumber(element.textContent));
+    }, 0);
+  };
+
   const createOverlay = () => {
     const existing = document.querySelector(`.${OVERLAY_CLASS}`);
     if (existing) return existing;
@@ -2312,11 +2358,14 @@ document.addEventListener('DOMContentLoaded', function () {
       return getProductItems(list).length;
     };
 
+    const hasLoadedExpectedCatalogue = () =>
+      loadedItemCount() >= expectedCount || reportedCatalogueCount() >= expectedCount;
+
     const scheduleFinishWhenStable = () => {
-      if (done || loadedItemCount() < expectedCount) return;
+      if (done || !hasLoadedExpectedCatalogue()) return;
       if (readyTimer) window.clearTimeout(readyTimer);
       readyTimer = window.setTimeout(() => {
-        if (loadedItemCount() >= expectedCount) finish(true);
+        if (hasLoadedExpectedCatalogue()) finish(true);
       }, READY_STABLE_MS);
     };
 
@@ -2326,6 +2375,7 @@ document.addEventListener('DOMContentLoaded', function () {
       listObserver.observe(list, {
         subtree: true,
         childList: true,
+        characterData: true,
         attributes: true,
         attributeFilter: ['class', 'style', 'hidden']
       });
@@ -2334,7 +2384,10 @@ document.addEventListener('DOMContentLoaded', function () {
     bodyObserver = new MutationObserver(scheduleFinishWhenStable);
     bodyObserver.observe(document.body, {
       subtree: true,
-      childList: true
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['class', 'style', 'hidden', 'data-catalogue-loaded-count']
     });
 
     [0, 150, 400, 800, 1400, 2200, 3500].forEach((delay) => {
