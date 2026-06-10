@@ -2200,6 +2200,133 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 (() => {
+  const PRODUCT_PATH_RE = /^\/products\/?$/;
+  const LOADING_CLASS = 'is-catalogue-loading';
+  const OVERLAY_CLASS = 'catalogue-loading-overlay';
+  const READY_STABLE_MS = 700;
+  const MAX_WAIT_MS = 12000;
+
+  const isProductsPage = () => {
+    const path = window.location?.pathname || '';
+    return PRODUCT_PATH_RE.test(path);
+  };
+
+  const getProductList = () =>
+    document.querySelector('[fs-list-element="list"]') ||
+    document.querySelector('.product-page__list') ||
+    document.querySelector('.products-list') ||
+    document.querySelector('.w-dyn-list');
+
+  const getProductItems = (list) => {
+    if (!list) return [];
+
+    const directItems = list.querySelectorAll('[fs-list-element="item"]');
+    if (directItems.length) return Array.from(directItems);
+
+    const collectionItems = list.querySelectorAll('.w-dyn-item');
+    if (collectionItems.length) return Array.from(collectionItems);
+
+    return Array.from(list.children).filter((child) => child.nodeType === 1);
+  };
+
+  const createOverlay = () => {
+    const existing = document.querySelector(`.${OVERLAY_CLASS}`);
+    if (existing) return existing;
+
+    const overlay = document.createElement('div');
+    overlay.className = OVERLAY_CLASS;
+    overlay.setAttribute('role', 'status');
+    overlay.setAttribute('aria-live', 'polite');
+    overlay.innerHTML = [
+      '<div class="catalogue-loading-overlay__inner">',
+        '<span class="catalogue-loading-overlay__spinner" aria-hidden="true"></span>',
+        '<span>Loading catalogue</span>',
+      '</div>'
+    ].join('');
+
+    document.body.appendChild(overlay);
+    window.requestAnimationFrame(() => overlay.classList.add('is-visible'));
+    return overlay;
+  };
+
+  const setupCatalogueLoadingGuard = () => {
+    if (!isProductsPage()) return;
+
+    const root = document.documentElement;
+    const overlay = createOverlay();
+    let readyTimer = null;
+    let listObserver = null;
+    let bodyObserver = null;
+    let done = false;
+
+    root.classList.add(LOADING_CLASS);
+
+    const finish = () => {
+      if (done) return;
+      done = true;
+
+      if (readyTimer) window.clearTimeout(readyTimer);
+      if (listObserver) listObserver.disconnect();
+      if (bodyObserver) bodyObserver.disconnect();
+      root.classList.remove(LOADING_CLASS);
+      overlay.classList.add('is-hidden');
+      overlay.classList.remove('is-visible');
+
+      window.setTimeout(() => {
+        overlay.remove();
+      }, 300);
+    };
+
+    const visibleItemCount = () => {
+      const list = getProductList();
+      return getProductItems(list).filter((item) => {
+        const style = window.getComputedStyle(item);
+        return style.display !== 'none' && style.visibility !== 'hidden';
+      }).length;
+    };
+
+    const scheduleFinishWhenStable = () => {
+      if (done || visibleItemCount() < 1) return;
+      if (readyTimer) window.clearTimeout(readyTimer);
+      readyTimer = window.setTimeout(() => {
+        if (visibleItemCount() > 0) finish();
+      }, READY_STABLE_MS);
+    };
+
+    const list = getProductList();
+    if (list) {
+      listObserver = new MutationObserver(scheduleFinishWhenStable);
+      listObserver.observe(list, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['class', 'style', 'hidden']
+      });
+    }
+
+    bodyObserver = new MutationObserver(scheduleFinishWhenStable);
+    bodyObserver.observe(document.body, {
+      subtree: true,
+      childList: true
+    });
+
+    [0, 150, 400, 800, 1400, 2200, 3500].forEach((delay) => {
+      window.setTimeout(scheduleFinishWhenStable, delay);
+    });
+
+    window.addEventListener('load', scheduleFinishWhenStable);
+    window.setTimeout(finish, MAX_WAIT_MS);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupCatalogueLoadingGuard);
+    return;
+  }
+
+  setupCatalogueLoadingGuard();
+})();
+
+(() => {
   const TOGGLE_TEXT_SELECTOR = '.dropdown-placeholder';
 
   const getFilterDropdowns = () =>
