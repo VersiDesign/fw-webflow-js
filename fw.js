@@ -2210,6 +2210,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const MAX_WAIT_MS = 45000;
   const PROGRESS_POLL_MS = 250;
 
+  const clearLegacyPersistentCatalogueFlag = () => {
+    try {
+      window.localStorage?.removeItem(STORAGE_KEY);
+    } catch (e) {}
+  };
+
   const isProductsPage = () => {
     const path = window.location?.pathname || '';
     return PRODUCT_PATH_RE.test(path);
@@ -2227,7 +2233,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const hasLoadedCatalogueBefore = (expectedCount) => {
     try {
-      return window.localStorage?.getItem(STORAGE_KEY) === String(expectedCount);
+      return window.sessionStorage?.getItem(STORAGE_KEY) === String(expectedCount);
     } catch (e) {
       return false;
     }
@@ -2249,7 +2255,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const rememberLoadedCatalogue = (expectedCount) => {
     try {
-      window.localStorage?.setItem(STORAGE_KEY, String(expectedCount));
+      window.sessionStorage?.setItem(STORAGE_KEY, String(expectedCount));
     } catch (e) {}
   };
 
@@ -2342,6 +2348,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const setupCatalogueLoadingGuard = () => {
     if (!isProductsPage()) return;
+
+    clearLegacyPersistentCatalogueFlag();
 
     const expectedCount = getExpectedProductCount();
     if (hasLoadedCatalogueBefore(expectedCount)) return;
