@@ -2287,6 +2287,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const hideTip = () => {
       tip.style.display = 'none';
+      rememberShownTip();
     };
 
     const hasShownTip = () => {
@@ -2305,7 +2306,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!hasShownTip()) {
       tip.style.display = 'flex';
-      rememberShownTip();
     }
 
     tipButton.addEventListener('click', hideTip);
