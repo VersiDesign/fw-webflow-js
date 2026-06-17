@@ -2205,6 +2205,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const OVERLAY_CLASS = 'catalogue-loading-overlay';
   const STORAGE_KEY = 'fwwProductsCatalogueLoadedCount';
   const SESSION_SHOWN_KEY = 'fwwProductsCatalogueLoaderShown';
+  const TIP_STORAGE_KEY = 'fwwProductsTipShown';
   const DEFAULT_EXPECTED_PRODUCT_COUNT = 269;
   const READY_STABLE_MS = 700;
   const MAX_WAIT_MS = 45000;
@@ -2275,6 +2276,39 @@ document.addEventListener('DOMContentLoaded', function () {
     if (collectionItems.length) return Array.from(collectionItems);
 
     return Array.from(list.children).filter((child) => child.nodeType === 1);
+  };
+
+  const setupProductsTip = () => {
+    if (!isProductsPage()) return;
+
+    const tip = document.querySelector('#tip');
+    const tipButton = document.querySelector('#tip-btn');
+    if (!tip || !tipButton) return;
+
+    const hideTip = () => {
+      tip.style.display = 'none';
+    };
+
+    const hasShownTip = () => {
+      try {
+        return window.localStorage?.getItem(TIP_STORAGE_KEY) === '1';
+      } catch (e) {
+        return false;
+      }
+    };
+
+    const rememberShownTip = () => {
+      try {
+        window.localStorage?.setItem(TIP_STORAGE_KEY, '1');
+      } catch (e) {}
+    };
+
+    if (!hasShownTip()) {
+      tip.style.display = 'flex';
+      rememberShownTip();
+    }
+
+    tipButton.addEventListener('click', hideTip);
   };
 
   const getCountCandidates = () =>
@@ -2434,10 +2468,14 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupCatalogueLoadingGuard);
+    document.addEventListener('DOMContentLoaded', () => {
+      setupProductsTip();
+      setupCatalogueLoadingGuard();
+    });
     return;
   }
 
+  setupProductsTip();
   setupCatalogueLoadingGuard();
 })();
 
