@@ -2160,7 +2160,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const SESSION_SHOWN_KEY = 'fwwProductsCatalogueLoaderShown';
   const TIP_STORAGE_KEY = 'fwwProductsTipShown';
   const DEFAULT_EXPECTED_PRODUCT_COUNT = 269;
-  const READY_STABLE_MS = 700;
+  const READY_STABLE_MS = 150;
   const MAX_WAIT_MS = 45000;
   const PROGRESS_POLL_MS = 250;
 
