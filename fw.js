@@ -103,53 +103,6 @@ document.addEventListener('DOMContentLoaded', function () {
   })();
 
   // =======================================================================
-  // TRADE PORTAL REGISTER (Webflow IX proxy click) ✅ MUST RUN ON ALL PAGES
-  // =======================================================================
-  (function setupRegisterIXProxy() {
-
-    function findExistingRegisterIXTrigger() {
-      var explicit = document.querySelector('[data-register-trigger="1"]');
-      if (explicit) return explicit;
-
-      var byHref = document.querySelector('a[href="#register"], a[href*="#register"]');
-      if (byHref) return byHref;
-
-      var byClass = document.querySelector('.register-trigger, .trade-portal-login, .trade-portal-link');
-      if (byClass) return byClass;
-
-      return null;
-    }
-
-    function triggerRegisterInteraction() {
-      var reg = document.querySelector('.register');
-      if (!reg) return;
-
-      var ixTrigger = findExistingRegisterIXTrigger();
-      if (ixTrigger) {
-        ixTrigger.click();
-        return;
-      }
-
-      console.warn('[register] No IX trigger found. Add data-register-trigger="1" to the working element that opens .register.');
-    }
-
-    document.addEventListener('click', function (e) {
-      var t1 = e.target && e.target.closest ? e.target.closest('#trade-portal') : null;
-      var t2 = e.target && e.target.closest ? e.target.closest('#btn-trade-portal') : null;
-      if (!t1 && !t2) return;
-
-      e.preventDefault();
-
-      if (typeof window.closeMobileNavIfOpen === 'function') {
-        window.closeMobileNavIfOpen();
-      }
-
-      triggerRegisterInteraction();
-    }, { passive: false });
-
-  })();
-
-  // =======================================================================
   // SORT TOGGLE
   // =======================================================================
   (function setupSortToggle() {
