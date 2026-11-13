@@ -262,6 +262,10 @@ document.addEventListener('DOMContentLoaded', function () {
       document.querySelectorAll('[data-cart-count]').forEach(function (el) {
         el.textContent = totalProducts;
       });
+
+      document.querySelectorAll('.product-page__filters-cart').forEach(function (link) {
+        link.classList.toggle('has-items', totalProducts > 0);
+      });
     }
 
     function renderCart() {
